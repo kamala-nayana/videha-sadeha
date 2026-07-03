@@ -249,7 +249,7 @@
 <header class="mast">
   <div class="eyebrow">Videha · विदेह — offline browser utility</div>
   <h1>PDF · चित्र · आवाज औजार<span class="en">Compress · Split/Merge PDFs · PNG/JPG Tools · Speech/Text · Text-to-Speech</span></h1>
-  <div style="margin-top:.6rem;font-size:13px;color:#8B1A1A;font-weight:700">✦ VERSION 30 · PDF split/merge · PNG/JPG split/merge · YouTube audio workflow · Speech/Text · Text-to-Speech ✦</div>
+  <div style="margin-top:.6rem;font-size:13px;color:#8B1A1A;font-weight:700">✦ VERSION 31 · PDF split/merge · PNG/JPG split/merge · YouTube audio workflow · Speech/Text with audio upload · Text-to-Speech ✦</div>
   <div class="offline-badge"><span class="dot"></span> 100% offline — कोनो फाइल अपलोड नहि होइत · nothing leaves your device</div>
 </header>
 
@@ -761,6 +761,17 @@
         <input type="checkbox" id="stInterim" checked style="accent-color:var(--crimson);width:18px;height:18px">
         <span class="hint" style="margin:0">Chrome/Edge मे Web Speech API online service प्रयोग कऽ सकैत अछि; offline guarantee नहि।</span>
       </div>
+      <div class="row">
+        <label class="k" for="stAudioFile">Audio file</label>
+        <input type="file" id="stAudioFile" accept="audio/*" style="display:none">
+        <button class="btn ghost" type="button" id="stAudioPick">🎵 Upload audio file</button>
+        <span class="hint" id="stAudioName" style="margin:0;flex:1;min-width:220px">MP3/WAV/M4A/OGG चुनू; फाइल local preview लेल रहत।</span>
+      </div>
+      <div class="row" id="stAudioRow" style="display:none">
+        <label class="k">Preview</label>
+        <audio id="stAudioPlayer" controls style="flex:1;min-width:240px"></audio>
+        <span class="hint" style="margin:0;flex:1;min-width:220px">Direct audio-file transcription browser Web Speech API मे उपलब्ध नहि; Start दबा कऽ audio play करब त mic सँ सुनल आवाज transcribe भऽ सकैत अछि।</span>
+      </div>
       <textarea id="stText" class="wide-text" placeholder="Speech-to-text output एतऽ आयत..."></textarea>
       <div class="actions">
         <button class="btn" id="stStart">🎙️ Start</button>
@@ -769,7 +780,7 @@
         <button class="btn ghost" id="stCopy">Copy</button>
         <button class="btn ghost" id="stClear">Clear</button>
       </div>
-      <div class="summary show" id="stStatus">Ready. Browser support required.</div>
+      <div class="summary show" id="stStatus">Ready. Browser support required. Audio upload preview added.</div>
     </div>
   </section>
 
@@ -2622,13 +2633,25 @@ window.addEventListener('unhandledrejection', function(ev){
   document.getElementById('ytCopy').addEventListener('click',async function(){ var txt=makeYtNotes(); try{ await navigator.clipboard.writeText(txt); }catch(e){} });
 
   // ════════════════════ SPEECH TO TEXT ════════════════════
-  var SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition, stRec=null, stFinal='';
+  var SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition, stRec=null, stFinal='', stAudioUrl='';
   function stStatus(msg){ var s=document.getElementById('stStatus'); if(s){s.textContent=msg; s.classList.add('show');} }
-  document.getElementById('stStart').addEventListener('click',function(){ if(!SpeechRec){ stStatus('SpeechRecognition एहि browser मे उपलब्ध नहि। Chrome/Edge प्रयोग करू।'); return; } stFinal=document.getElementById('stText').value||''; stRec=new SpeechRec(); stRec.lang=document.getElementById('stLang').value; stRec.continuous=true; stRec.interimResults=document.getElementById('stInterim').checked; stRec.onstart=function(){ document.getElementById('stStart').disabled=true; document.getElementById('stStop').disabled=false; stStatus('Listening…'); }; stRec.onerror=function(e){ stStatus('Speech error: '+(e.error||'unknown')+'. Maithili fail भेल त hi-IN कोशिश करू।'); }; stRec.onend=function(){ document.getElementById('stStart').disabled=false; document.getElementById('stStop').disabled=true; stStatus('Stopped.'); }; stRec.onresult=function(ev){ var interim=''; for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) stFinal += (stFinal?' ':'') + t.trim(); else interim += t; } document.getElementById('stText').value = stFinal + (interim?'\n['+interim+']':''); }; try{ stRec.start(); }catch(e){ stStatus('Cannot start: '+e.message); } });
+  function stSetAudioFile(file){
+    var player=document.getElementById('stAudioPlayer'), row=document.getElementById('stAudioRow'), name=document.getElementById('stAudioName');
+    if(stAudioUrl){ URL.revokeObjectURL(stAudioUrl); stAudioUrl=''; }
+    if(!file){ if(player) player.removeAttribute('src'); if(row) row.style.display='none'; if(name) name.textContent='MP3/WAV/M4A/OGG चुनू; फाइल local preview लेल रहत।'; return; }
+    stAudioUrl=URL.createObjectURL(file);
+    if(player){ player.src=stAudioUrl; player.load(); }
+    if(row) row.style.display='flex';
+    if(name) name.textContent='Selected: '+file.name+' · '+fmtBytes(file.size);
+    stStatus('Audio file loaded for local preview. Direct file transcription browser Web Speech API मे उपलब्ध नहि; Start दबा कऽ audio play करू, mic सुनि सकैत अछि।');
+  }
+  document.getElementById('stAudioPick').addEventListener('click',function(){ document.getElementById('stAudioFile').click(); });
+  document.getElementById('stAudioFile').addEventListener('change',function(){ stSetAudioFile(this.files&&this.files[0]); });
+  document.getElementById('stStart').addEventListener('click',function(){ if(!SpeechRec){ stStatus('SpeechRecognition एहि browser मे उपलब्ध नहि। Chrome/Edge प्रयोग करू।'); return; } stFinal=document.getElementById('stText').value||''; stRec=new SpeechRec(); stRec.lang=document.getElementById('stLang').value; stRec.continuous=true; stRec.interimResults=document.getElementById('stInterim').checked; stRec.onstart=function(){ document.getElementById('stStart').disabled=true; document.getElementById('stStop').disabled=false; stStatus('Listening… audio file loaded अछि तँ ओकर Preview play करू।'); }; stRec.onerror=function(e){ stStatus('Speech error: '+(e.error||'unknown')+'. Maithili fail भेल त hi-IN कोशिश करू।'); }; stRec.onend=function(){ document.getElementById('stStart').disabled=false; document.getElementById('stStop').disabled=true; stStatus('Stopped.'); }; stRec.onresult=function(ev){ var interim=''; for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) stFinal += (stFinal?' ':'') + t.trim(); else interim += t; } document.getElementById('stText').value = stFinal + (interim?'\\n['+interim+']':''); }; try{ stRec.start(); }catch(e){ stStatus('Cannot start: '+e.message); } });
   document.getElementById('stStop').addEventListener('click',function(){ try{stRec&&stRec.stop();}catch(e){} });
   document.getElementById('stDownload').addEventListener('click',function(){ var blob=new Blob([document.getElementById('stText').value||''],{type:'text/plain;charset=utf-8'}); triggerDownload(blob,'videha-speech-to-text.txt'); });
   document.getElementById('stCopy').addEventListener('click',async function(){ try{ await navigator.clipboard.writeText(document.getElementById('stText').value||''); stStatus('Copied.'); }catch(e){ stStatus('Copy failed; select text manually.'); } });
-  document.getElementById('stClear').addEventListener('click',function(){ document.getElementById('stText').value=''; stFinal=''; stStatus('Cleared.'); });
+  document.getElementById('stClear').addEventListener('click',function(){ document.getElementById('stText').value=''; stFinal=''; stSetAudioFile(null); document.getElementById('stAudioFile').value=''; stStatus('Cleared.'); });
 
   // ════════════════════ TEXT TO SPEECH + AUDIO RECORDING ════════════════════
   function splitTtsChunks(txt){ txt=(txt||'').replace(/\s+/g,' ').trim(); if(!txt)return []; var chunks=[], max=220; while(txt.length>max){ var cut=Math.max(txt.lastIndexOf('।',max),txt.lastIndexOf('.',max),txt.lastIndexOf(',',max),txt.lastIndexOf(' ',max)); if(cut<80) cut=max; chunks.push(txt.slice(0,cut+1).trim()); txt=txt.slice(cut+1).trim(); } if(txt)chunks.push(txt); return chunks; }
