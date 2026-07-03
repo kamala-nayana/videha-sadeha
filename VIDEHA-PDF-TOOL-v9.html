@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>विदेह PDF टूल v26 · Videha Navigation · Compress · Parse · OCR</title>
+<title>विदेह सर्व-औजार v30 · PDF Split/Merge · Image Tools · Speech/Text/Audio</title>
 <link rel="stylesheet" href="assets/css/videha.css">
 <style>
   :root{
@@ -199,6 +199,20 @@
     .val{min-width:0}
     .tab{padding:11px 16px;font-size:14px}
   }
+
+  /* v30 add-on tools */
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.85rem;margin-top:1rem}
+  .mini-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.9rem .95rem;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .mini-card b{color:var(--navy)}
+  .mini-card .small{font-size:.78rem;color:var(--muted);margin-top:.25rem;line-height:1.5}
+  .wide-text{width:100%;min-height:150px;border:1.5px solid var(--line);border-radius:10px;padding:.75rem;background:#fff;color:var(--ink);font:15px/1.6 Georgia,'Noto Serif Devanagari','Nirmala UI',Mangal,serif;resize:vertical}
+  .small-input{font-family:inherit;font-size:.86rem;padding:.42rem .6rem;border:1.5px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+  .queue-actions{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}
+  .tiny-btn{appearance:none;border:1px solid var(--line);background:#fff8ef;color:var(--crimson);border-radius:16px;padding:.22rem .55rem;font-family:inherit;font-size:.74rem;font-weight:700;cursor:pointer}
+  .tiny-btn:hover{background:#fff;color:var(--navy)}
+  .outbox{margin-top:.9rem;background:#fff;border:1px solid var(--line);border-radius:10px;padding:.8rem;display:none}
+  .outbox.show{display:block}
+
 </style>
 </head>
 <body>
@@ -234,17 +248,23 @@
 
 <header class="mast">
   <div class="eyebrow">Videha · विदेह — offline browser utility</div>
-  <h1>PDF टूल<span class="en">Smart Compress PDFs · Convert PDF to PNG/JPG · Parse Crop/Zone · OCR Crop/Zone</span></h1>
-  <div style="margin-top:.6rem;font-size:13px;color:#8B1A1A;font-weight:700">✦ VERSION 26 · Videha navigation corrected · compression · conversion · parse crop/zone · OCR crop/zone ✦</div>
+  <h1>PDF · चित्र · आवाज औजार<span class="en">Compress · Split/Merge PDFs · PNG/JPG Tools · Speech/Text · Text-to-Speech</span></h1>
+  <div style="margin-top:.6rem;font-size:13px;color:#8B1A1A;font-weight:700">✦ VERSION 30 · PDF split/merge · PNG/JPG split/merge · YouTube audio workflow · Speech/Text · Text-to-Speech ✦</div>
   <div class="offline-badge"><span class="dot"></span> 100% offline — कोनो फाइल अपलोड नहि होइत · nothing leaves your device</div>
 </header>
 
 <div class="wrap">
   <div class="tabs">
     <button class="tab active" data-tab="compress">🗜️ PDF संकुचन · Compress</button>
+    <button class="tab" data-tab="splitpdf">✂️ PDF Split</button>
+    <button class="tab" data-tab="mergepdf">🧩 PDF Merge</button>
     <button class="tab" data-tab="convert">🖼️ PDF → PNG/JPG</button>
+    <button class="tab" data-tab="imagekit">🖼️ PNG/JPG Tools</button>
     <button class="tab" data-tab="parse">🔎 पाठ पार्सिंग · Parse Text</button>
     <button class="tab" data-tab="ocr">👁️ स्कैन OCR · OCR Scans</button>
+    <button class="tab" data-tab="youtubeaudio">▶️ YouTube Audio</button>
+    <button class="tab" data-tab="speechtext">🎙️ Speech → Text</button>
+    <button class="tab" data-tab="tts">🔊 Text → Speech</button>
   </div>
 
   <!-- ════════ COMPRESS PANEL ════════ -->
@@ -557,13 +577,240 @@
     <div class="files" id="listO"></div>
   </section>
 
+  <!-- ════════ PDF SPLIT PANEL ════════ -->
+  <section class="panel" id="panel-splitpdf">
+    <div class="drop" id="dropS">
+      <div class="big">✂️</div>
+      <div class="lead">PDF केँ पन्ना वा size अनुसार बाँटू · Split PDF by pages or approximate size</div>
+      <div class="sub">No artificial file-size cap; practical capacity depends on browser RAM/device power.</div>
+      <input type="file" id="fileS" accept="application/pdf" multiple>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <label class="k" for="modeS">Split mode</label>
+        <select id="modeS" style="min-width:270px">
+          <option value="ranges" selected>Page groups/ranges · 1-5;6-10;11-</option>
+          <option value="every">Every N pages · हर N पन्ना</option>
+          <option value="size">Approx target size MB · अनुमानित size</option>
+        </select>
+        <span class="hint" style="margin:0;flex:1;min-width:220px">Page split exact अछि। Size split browser-rendered PDF मे approximate अछि, कारण output size image quality/DPI पर निर्भर करैत अछि।</span>
+      </div>
+      <div class="row" id="rangeRowS">
+        <label class="k" for="rangesS">Page groups</label>
+        <input type="text" id="rangesS" value="1-" placeholder="1-5;6-10;11-" style="flex:1;min-width:220px">
+        <span class="hint" style="margin:0">Semicolon अलग output file बनायत।</span>
+      </div>
+      <div class="row" id="everyRowS" style="display:none">
+        <label class="k" for="everyS">Every N pages</label>
+        <input type="number" id="everyS" value="10" min="1" step="1" style="width:110px">
+        <span class="hint" style="margin:0">उदाहरण: 10 = 1-10, 11-20...</span>
+      </div>
+      <div class="row" id="sizeRowS" style="display:none">
+        <label class="k" for="sizeS">Target MB</label>
+        <input type="number" id="sizeS" value="20" min="1" step="1" style="width:110px">
+        <span class="hint" style="margin:0">Approximate batching; exact MB guarantee नहि।</span>
+      </div>
+      <div class="row">
+        <label class="k" for="dpiS">Render DPI</label>
+        <div class="slider-wrap"><input type="range" id="dpiS" min="72" max="220" value="130" step="6"><span class="val" id="dpiSval">130 DPI</span></div>
+      </div>
+      <div class="row">
+        <label class="k" for="qS">JPG quality</label>
+        <div class="slider-wrap"><input type="range" id="qS" min="45" max="95" value="82" step="3"><span class="val" id="qSval">82%</span></div>
+      </div>
+      <div class="warn-rasterize">⚠️ Split output एहि browser tool मे rendered/raster PDF होयत; searchable text layer सुरक्षित नहि रहि सकैत अछि। Unlimited capacity = code limit नहि, browser/device memory limit लागू।</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="runS" disabled>✂️ PDF split करू</button>
+      <button class="btn navy" id="zipS" disabled>⬇️ Split PDFs ZIP</button>
+      <button class="btn ghost" id="clearS" disabled>साफ करू · Clear</button>
+    </div>
+    <div class="summary" id="sumS"></div>
+    <div class="files" id="listS"></div>
+  </section>
+
+  <!-- ════════ PDF MERGE PANEL ════════ -->
+  <section class="panel" id="panel-mergepdf">
+    <div class="drop" id="dropM">
+      <div class="big">🧩</div>
+      <div class="lead">PDF, PNG, JPG जोड़ि एक PDF बनाउ · Merge PDF/images into one PDF</div>
+      <div class="sub">Drag files, reorder, then merge. No artificial count/size limit; browser memory applies.</div>
+      <input type="file" id="fileM" accept="application/pdf,image/png,image/jpeg" multiple>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <label class="k" for="dpiM">PDF render DPI</label>
+        <div class="slider-wrap"><input type="range" id="dpiM" min="72" max="220" value="130" step="6"><span class="val" id="dpiMval">130 DPI</span></div>
+      </div>
+      <div class="row">
+        <label class="k" for="qM">PDF JPG quality</label>
+        <div class="slider-wrap"><input type="range" id="qM" min="45" max="95" value="82" step="3"><span class="val" id="qMval">82%</span></div>
+      </div>
+      <div class="row">
+        <label class="k" for="imgPageM">Image pages</label>
+        <select id="imgPageM" style="min-width:230px">
+          <option value="original" selected>Use original image size</option>
+          <option value="a4">Fit to A4 portrait</option>
+          <option value="letter">Fit to Letter portrait</option>
+        </select>
+        <span class="hint" style="margin:0">PDF pages are rendered; image files are placed as pages.</span>
+      </div>
+      <div class="warn-rasterize">⚠️ PDF merge एहि standalone version मे rasterizes PDF pages through canvas. Use lower DPI for very large files.</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="runM" disabled>🧩 Merge PDF बनाउ</button>
+      <button class="btn ghost" id="clearM" disabled>साफ करू · Clear</button>
+    </div>
+    <div class="summary" id="sumM"></div>
+    <div class="files" id="listM"></div>
+  </section>
+
+  <!-- ════════ IMAGE KIT PANEL ════════ -->
+  <section class="panel" id="panel-imagekit">
+    <div class="drop" id="dropI">
+      <div class="big">🖼️</div>
+      <div class="lead">PNG/JPG split, merge, PDF बनाउ · Image split/merge/convert</div>
+      <div class="sub">Multiple PNG/JPG files; output ZIP or one merged file/PDF.</div>
+      <input type="file" id="fileI" accept="image/png,image/jpeg" multiple>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <label class="k" for="modeI">Image tool</label>
+        <select id="modeI" style="min-width:270px">
+          <option value="tiles" selected>Split into rows × columns</option>
+          <option value="pixels">Split by tile width/height pixels</option>
+          <option value="mergeV">Merge vertically</option>
+          <option value="mergeH">Merge horizontally</option>
+          <option value="pdf">PNG/JPG → single PDF</option>
+        </select>
+      </div>
+      <div class="row" id="tileRowI">
+        <label class="k">Rows × Columns</label>
+        <input type="number" id="rowsI" value="2" min="1" step="1" style="width:82px"><span class="hint" style="margin:0">rows</span>
+        <input type="number" id="colsI" value="2" min="1" step="1" style="width:82px"><span class="hint" style="margin:0">columns</span>
+      </div>
+      <div class="row" id="pxRowI" style="display:none">
+        <label class="k">Tile pixels</label>
+        <input type="number" id="tileWI" value="1000" min="1" step="10" style="width:100px"><span class="hint" style="margin:0">width</span>
+        <input type="number" id="tileHI" value="1000" min="1" step="10" style="width:100px"><span class="hint" style="margin:0">height</span>
+      </div>
+      <div class="row">
+        <label class="k" for="fmtI">Output format</label>
+        <select id="fmtI" style="min-width:150px"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option></select>
+        <span class="hint" style="margin:0">PNG lossless; JPG smaller.</span>
+      </div>
+      <div class="row" id="qRowI">
+        <label class="k" for="qI">JPG quality</label>
+        <div class="slider-wrap"><input type="range" id="qI" min="45" max="100" value="88" step="3"><span class="val" id="qIval">88%</span></div>
+      </div>
+      <div class="row" id="pdfRowI" style="display:none">
+        <label class="k" for="pdfPageI">PDF page</label>
+        <select id="pdfPageI" style="min-width:210px"><option value="original">Original image size</option><option value="a4">A4 portrait fit</option><option value="letter">Letter portrait fit</option></select>
+      </div>
+      <div class="warn-rasterize">Large image merge/split uses browser canvas; very large panoramas may exceed browser canvas memory.</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="runI" disabled>🖼️ चलाउ · Run image tool</button>
+      <button class="btn navy" id="zipI" disabled>⬇️ Download ZIP</button>
+      <button class="btn ghost" id="clearI" disabled>साफ करू · Clear</button>
+    </div>
+    <div class="summary" id="sumI"></div>
+    <div class="files" id="listI"></div>
+  </section>
+
+  <!-- ════════ YOUTUBE AUDIO WORKFLOW PANEL ════════ -->
+  <section class="panel" id="panel-youtubeaudio">
+    <div class="controls" style="margin-top:0">
+      <div class="row">
+        <label class="k" for="ytUrl">YouTube URL</label>
+        <input type="url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." style="flex:1;min-width:240px">
+      </div>
+      <div class="row">
+        <label class="k" for="ytPurpose">Use case</label>
+        <select id="ytPurpose" style="min-width:260px">
+          <option value="own" selected>My own / authorized / Creative Commons content</option>
+          <option value="public">Public-domain / licensed archive workflow</option>
+          <option value="note">Make citation/notes only</option>
+        </select>
+      </div>
+      <div class="warn-rasterize">▶️ Standalone browser HTML YouTube सँ audio directly download/convert नहि कऽ सकैत, कारण YouTube restrictions/CORS आ copyright/terms issues। ई panel केवल authorized workflow, URL checking, notes, आ external lawful conversion reminder लेल अछि।</div>
+      <div class="actions">
+        <button class="btn" id="ytMake">▶️ Workflow बनाउ</button>
+        <button class="btn navy" id="ytOpen">YouTube खोलू</button>
+        <button class="btn ghost" id="ytCopy">Copy notes</button>
+      </div>
+      <div class="outbox" id="ytOut"></div>
+    </div>
+  </section>
+
+  <!-- ════════ SPEECH TO TEXT PANEL ════════ -->
+  <section class="panel" id="panel-speechtext">
+    <div class="controls" style="margin-top:0">
+      <div class="row">
+        <label class="k" for="stLang">Language</label>
+        <select id="stLang" style="min-width:260px">
+          <option value="en-IN">English India · en-IN</option>
+          <option value="en-US">English US · en-US</option>
+          <option value="hi-IN" selected>Hindi / Devanagari · hi-IN</option>
+          <option value="mai-IN">Maithili attempt · mai-IN</option>
+        </select>
+        <span class="hint" style="margin:0;flex:1;min-width:220px">Maithili speech recognition browser मे प्रायः native नहि; mai-IN fail भेल त hi-IN fallback कोशिश करू।</span>
+      </div>
+      <div class="row">
+        <label class="k" for="stInterim">Live interim</label>
+        <input type="checkbox" id="stInterim" checked style="accent-color:var(--crimson);width:18px;height:18px">
+        <span class="hint" style="margin:0">Chrome/Edge मे Web Speech API online service प्रयोग कऽ सकैत अछि; offline guarantee नहि।</span>
+      </div>
+      <textarea id="stText" class="wide-text" placeholder="Speech-to-text output एतऽ आयत..."></textarea>
+      <div class="actions">
+        <button class="btn" id="stStart">🎙️ Start</button>
+        <button class="btn ghost" id="stStop" disabled>Stop</button>
+        <button class="btn navy" id="stDownload">⬇️ TXT Download</button>
+        <button class="btn ghost" id="stCopy">Copy</button>
+        <button class="btn ghost" id="stClear">Clear</button>
+      </div>
+      <div class="summary show" id="stStatus">Ready. Browser support required.</div>
+    </div>
+  </section>
+
+  <!-- ════════ TEXT TO SPEECH PANEL ════════ -->
+  <section class="panel" id="panel-tts">
+    <div class="controls" style="margin-top:0">
+      <div class="row">
+        <label class="k" for="ttsLang">Language</label>
+        <select id="ttsLang" style="min-width:220px">
+          <option value="en-IN">English India · en-IN</option>
+          <option value="en-US">English US · en-US</option>
+          <option value="hi-IN" selected>Hindi / Devanagari · hi-IN</option>
+          <option value="mai-IN">Maithili attempt · mai-IN</option>
+        </select>
+        <select id="ttsVoice" style="flex:1;min-width:220px"><option value="">Browser default voice</option></select>
+      </div>
+      <textarea id="ttsText" class="wide-text" placeholder="Text लिखू — English, Hindi वा Maithili. Very long text allowed; browser/device memory and voice engine limits apply."></textarea>
+      <div class="row">
+        <label class="k" for="ttsRate">Rate</label><input type="range" id="ttsRate" min="0.5" max="1.8" value="1" step="0.1"><span class="val" id="ttsRateVal">1.0×</span>
+        <label class="k" for="ttsPitch" style="min-width:auto">Pitch</label><input type="range" id="ttsPitch" min="0.5" max="1.8" value="1" step="0.1"><span class="val" id="ttsPitchVal">1.0</span>
+      </div>
+      <div class="warn-rasterize">🔊 Browser SpeechSynthesis voice playback direct MP3 export नहि दैत अछि। “Record & download” बटन microphone/system-audio recording workflow चलायत: browser audio/mpeg support करैत अछि तँ MP3, नहि तँ WebM/OGG audio download होयत। Unlimited = no artificial text-length cap; browser voice/memory limit लागू।</div>
+      <div class="actions">
+        <button class="btn" id="ttsSpeak">🔊 Speak</button>
+        <button class="btn ghost" id="ttsPause">Pause/Resume</button>
+        <button class="btn ghost" id="ttsStop">Stop</button>
+        <button class="btn navy" id="ttsRecord">🎙️ Record & download audio</button>
+        <button class="btn ghost" id="ttsTxt">⬇️ TXT</button>
+      </div>
+      <div class="summary show" id="ttsStatus">Ready. MP3 depends on MediaRecorder audio/mpeg support; fallback file may be WebM/OGG.</div>
+    </div>
+  </section>
+
+
 </div>
 
 <footer class="videha-site-footer">
   <div class="videha-footer-inner">
     <div class="videha-footer-title">विदेह · Videha — First Maithili Fortnightly eJournal</div>
     <div class="videha-footer-line">© <span id="yr"></span> Gajendra Thakur, Editor — Videha eJournal · ISSN 2229-547X</div>
-    <div class="videha-footer-line">ई PDF औजार 100% offline/local browser workflow लेल बनाओल गेल अछि — कोनो फाइल सर्वर पर अपलोड नहि होइत।</div>
+    <div class="videha-footer-line">ई PDF/चित्र/आवाज औजार local browser workflow लेल बनाओल गेल अछि — selected local files सर्वर पर अपलोड नहि होइत।</div>
     <div class="videha-footer-links">
       <a href="https://www.videha.co.in/" target="_blank" rel="noopener">videha.co.in</a>
       <a href="https://www.videha.co.in/videha-elearning.htm" target="_blank" rel="noopener">विदेह ई-लर्निङ्ग</a>
@@ -2282,6 +2529,122 @@ window.addEventListener('unhandledrejection', function(ev){
     setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1500);
   }
 
+
+
+  // ════════════════════ v30 shared helpers for split/merge/images/audio ════════════════════
+  function baseName(name){ return String(name||'file').replace(/\.[^.]+$/,'').replace(/[^\w\-\u0900-\u097F\u11480-\u114DF]+/g,'_').replace(/^_+|_+$/g,'') || 'videha_file'; }
+  function setSliderVal(sliderId, valId, suffix){ var s=document.getElementById(sliderId), v=document.getElementById(valId); if(!s||!v)return; function up(){v.textContent=s.value+(suffix||'');} s.addEventListener('input',up); up(); }
+  setSliderVal('dpiS','dpiSval',' DPI'); setSliderVal('qS','qSval','%'); setSliderVal('dpiM','dpiMval',' DPI'); setSliderVal('qM','qMval','%'); setSliderVal('qI','qIval','%');
+  function updateRowsByMode(selectId, map){ var sel=document.getElementById(selectId); if(!sel)return; function up(){ Object.keys(map).forEach(function(k){ var el=document.getElementById(map[k]); if(el) el.style.display = (sel.value===k) ? '' : 'none'; }); } sel.addEventListener('change',up); up(); }
+  updateRowsByMode('modeS',{ranges:'rangeRowS',every:'everyRowS',size:'sizeRowS'});
+  function updateImageRows(){ var m=(document.getElementById('modeI')||{}).value; var tile=document.getElementById('tileRowI'), px=document.getElementById('pxRowI'), pdf=document.getElementById('pdfRowI'); if(tile) tile.style.display=m==='tiles'?'':'none'; if(px) px.style.display=m==='pixels'?'':'none'; if(pdf) pdf.style.display=m==='pdf'?'':'none'; }
+  var modeIel=document.getElementById('modeI'); if(modeIel){ modeIel.addEventListener('change',updateImageRows); updateImageRows(); }
+  function parseRangeGroups(str,total){ var s=(str||'').trim(); if(!s) s='1-'; return s.split(';').map(function(part){ return parsePages(part,total); }).filter(function(arr){ return arr&&arr.length; }); }
+  function makeEveryGroups(total,n){ n=Math.max(1,parseInt(n,10)||1); var groups=[]; for(var p=1;p<=total;p+=n){ var g=[]; for(var q=p;q<Math.min(total+1,p+n);q++) g.push(q); groups.push(g); } return groups; }
+  function makeApproxSizeGroups(total,fileSize,targetMB){ var target=Math.max(1,parseFloat(targetMB)||1)*1048576; var avg=Math.max(1,fileSize/Math.max(1,total)); var per=Math.max(1,Math.floor(target/avg)); return makeEveryGroups(total,per); }
+  async function addPdfPageRendered(docBox, page, dpi, quality){
+    var base=page.getViewport({scale:1}); var pw=base.width, ph=base.height;
+    var rendered=await renderPage(page, +dpi||130, false, 25000000);
+    var jpg=rendered.canvas.toDataURL('image/jpeg', Math.max(.1,Math.min(1,(+quality||82)/100)));
+    if(!docBox.doc){ docBox.doc=new window.jspdf.jsPDF({orientation:pw>ph?'l':'p', unit:'pt', format:[pw,ph], compress:true}); }
+    else { docBox.doc.addPage([pw,ph], pw>ph?'l':'p'); }
+    docBox.doc.addImage(jpg,'JPEG',0,0,pw,ph,undefined,'FAST');
+    disposeCanvas(rendered.canvas);
+  }
+  async function makePdfFromPageNumbers(file, pageNums, dpi, quality, progress){
+    var buf=await file.arrayBuffer(); var opened=await openPdf(buf); var pdf=opened.pdf, box={doc:null};
+    for(var i=0;i<pageNums.length;i++){ var pg=await pdf.getPage(pageNums[i]); if(progress) progress(i+1,pageNums.length); await addPdfPageRendered(box, pg, dpi, quality); try{ pg.cleanup&&pg.cleanup(); }catch(e){} }
+    try{ opened.loadingTask&&opened.loadingTask.destroy&&opened.loadingTask.destroy(); }catch(e){}
+    if(!box.doc) throw new Error('No pages selected');
+    return new Blob([box.doc.output('arraybuffer')],{type:'application/pdf'});
+  }
+  function makeSimpleFileRow(listEl, item, idx, controlsHtml){
+    var el=document.createElement('div'); el.className='file'; item.el=el;
+    el.innerHTML='<div class="ic">'+(item.icon||'📄')+'</div><div class="meta"><div class="name">'+esc(item.name||item.file.name)+'</div><div class="stat">'+esc(item.stat||fmtBytes(item.file.size))+'</div><div class="bar"><i></i></div></div><div class="queue-actions">'+(controlsHtml||'')+'</div><div class="dl"></div><button class="remove" title="Remove">×</button>';
+    item.statEl=el.querySelector('.stat'); item.barEl=el.querySelector('.bar > i'); item.dlEl=el.querySelector('.dl');
+    el.querySelector('.remove').addEventListener('click',function(){ if(item._remove) item._remove(item); });
+    listEl.appendChild(el); return el;
+  }
+  function fileDownloadLink(item, blob, name, label){ var url=URL.createObjectURL(blob); item._urls=item._urls||[]; item._urls.push(url); item.dlEl.innerHTML='<a href="'+url+'" download="'+esc(name)+'">'+esc(label||'⬇️ Download')+'</a>'; }
+  async function loadImageElement(file){ return new Promise(function(resolve,reject){ var img=new Image(); var url=URL.createObjectURL(file); img.onload=function(){ URL.revokeObjectURL(url); resolve(img); }; img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('Cannot load image: '+file.name)); }; img.src=url; }); }
+  function canvasFromImage(img){ var c=document.createElement('canvas'); c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height; c.getContext('2d').drawImage(img,0,0); return c; }
+  function getImageFormatLabel(mime){ return mime==='image/png'?'PNG':'JPEG'; }
+  async function imageCanvasToBlob(canvas){ var mime=document.getElementById('fmtI').value; var q=(+document.getElementById('qI').value||88)/100; return await canvasToBlob(canvas, q, mime); }
+  function pageSizeForImage(w,h,mode){ if(mode==='a4') return {pw:595.28, ph:841.89}; if(mode==='letter') return {pw:612, ph:792}; return {pw:w, ph:h}; }
+  function fitRect(sw,sh,pw,ph){ var r=Math.min(pw/sw, ph/sh); var w=sw*r, h=sh*r; return {x:(pw-w)/2,y:(ph-h)/2,w:w,h:h}; }
+  async function addImageFileToPdf(docBox,file,pageMode){ var img=await loadImageElement(file); var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height; var pg=pageSizeForImage(w,h,pageMode); if(!docBox.doc) docBox.doc=new window.jspdf.jsPDF({orientation:pg.pw>pg.ph?'l':'p', unit:'pt', format:[pg.pw,pg.ph], compress:true}); else docBox.doc.addPage([pg.pw,pg.ph],pg.pw>pg.ph?'l':'p'); var c=canvasFromImage(img); var mime=file.type==='image/png'?'image/png':'image/jpeg'; var data=c.toDataURL(mime, mime==='image/jpeg'?0.92:undefined); var fr=fitRect(w,h,pg.pw,pg.ph); docBox.doc.addImage(data, mime==='image/png'?'PNG':'JPEG', fr.x, fr.y, fr.w, fr.h, undefined, 'FAST'); disposeCanvas(c); }
+
+  // ════════════════════ PDF SPLIT ════════════════════
+  var splitQueue=[];
+  function refreshSButtons(){ var any=splitQueue.length>0, done=splitQueue.some(function(x){return x.outputs&&x.outputs.length;}); document.getElementById('runS').disabled=!any; document.getElementById('clearS').disabled=!any; document.getElementById('zipS').disabled=!done; }
+  function addSplitFiles(files){ Array.from(files||[]).forEach(function(f){ if(f.type!=='application/pdf'&&!/\.pdf$/i.test(f.name))return; var item={file:f,name:f.name,icon:'✂️',status:'ready'}; item._remove=function(it){ splitQueue=splitQueue.filter(function(x){return x!==it;}); (it._urls||[]).forEach(function(u){URL.revokeObjectURL(u);}); if(it.el)it.el.remove(); updateSSummary(); refreshSButtons(); }; splitQueue.push(item); makeSimpleFileRow(document.getElementById('listS'),item,splitQueue.length); }); refreshSButtons(); }
+  async function splitOne(item){ item.outputs=[]; item.status='running'; item.statEl.textContent='Reading PDF…'; item.barEl.style.width='2%'; var buf=await item.file.arrayBuffer(); var opened=await openPdf(buf); var total=opened.pdf.numPages; try{ opened.loadingTask&&opened.loadingTask.destroy&&opened.loadingTask.destroy(); }catch(e){}
+    var mode=document.getElementById('modeS').value, groups=[]; if(mode==='ranges') groups=parseRangeGroups(document.getElementById('rangesS').value,total); else if(mode==='every') groups=makeEveryGroups(total,document.getElementById('everyS').value); else groups=makeApproxSizeGroups(total,item.file.size,document.getElementById('sizeS').value);
+    var dpi=document.getElementById('dpiS').value, q=document.getElementById('qS').value;
+    for(var g=0; g<groups.length; g++){ var pages=groups[g]; item.statEl.textContent='Building part '+(g+1)+'/'+groups.length+' · pages '+pages[0]+'-'+pages[pages.length-1]; item.barEl.style.width=Math.round((g/groups.length)*95)+'%'; var blob=await makePdfFromPageNumbers(item.file,pages,dpi,q,function(i,n){ item.statEl.textContent='Part '+(g+1)+'/'+groups.length+' · page '+i+'/'+n; }); var outName=baseName(item.file.name)+'_split_'+String(g+1).padStart(3,'0')+'_p'+pages[0]+'-'+pages[pages.length-1]+'.pdf'; item.outputs.push({blob:blob,name:outName,pages:pages.length}); }
+    item.status='done'; item.barEl.style.width='100%'; item.statEl.innerHTML='✅ '+item.outputs.length+' split PDF(s) · '+item.outputs.reduce(function(a,x){return a+x.pages;},0)+' pages';
+    if(item.outputs.length===1) fileDownloadLink(item,item.outputs[0].blob,item.outputs[0].name,'⬇️ PDF'); else item.dlEl.innerHTML='<span class="hint">Use ZIP</span>';
+  }
+  document.getElementById('runS').addEventListener('click',async function(){ var btn=this,lbl=btn.textContent; btn.disabled=true; btn.textContent='⏳ Splitting…'; for(var i=0;i<splitQueue.length;i++){ if(splitQueue[i].status==='done')continue; try{ await splitOne(splitQueue[i]); }catch(e){ splitQueue[i].status='error'; splitQueue[i].statEl.innerHTML='<span style="color:var(--crimson)">Error: '+esc(e.message||e)+'</span>'; } updateSSummary(); } btn.textContent=lbl; refreshSButtons(); });
+  function updateSSummary(){ var done=splitQueue.filter(function(x){return x.outputs&&x.outputs.length;}); var sum=document.getElementById('sumS'); if(!done.length){sum.classList.remove('show');return;} var count=0, bytes=0; done.forEach(function(x){x.outputs.forEach(function(o){count++;bytes+=o.blob.size;});}); sum.innerHTML='✅ <b>'+count+'</b> split PDF(s) ready · '+fmtBytes(bytes); sum.classList.add('show'); refreshSButtons(); }
+  document.getElementById('zipS').addEventListener('click',async function(){ var zip=new JSZip(), n=0; splitQueue.forEach(function(x){(x.outputs||[]).forEach(function(o){zip.file(o.name,o.blob);n++;});}); if(!n)return; var blob=await zip.generateAsync({type:'blob',compression:'STORE'}); triggerDownload(blob,'videha-pdf-split.zip'); });
+  document.getElementById('clearS').addEventListener('click',function(){ splitQueue.forEach(function(x){(x._urls||[]).forEach(function(u){URL.revokeObjectURL(u);});}); splitQueue=[]; document.getElementById('listS').innerHTML=''; document.getElementById('sumS').classList.remove('show'); refreshSButtons(); });
+
+  // ════════════════════ PDF MERGE ════════════════════
+  var mergeQueue=[];
+  function renderMergeList(){ var list=document.getElementById('listM'); list.innerHTML=''; mergeQueue.forEach(function(item,idx){ var ctr='<button class="tiny-btn" data-act="up">↑</button><button class="tiny-btn" data-act="down">↓</button>'; makeSimpleFileRow(list,item,idx,ctr); item.el.querySelector('[data-act="up"]').onclick=function(){ if(idx>0){ var t=mergeQueue[idx-1]; mergeQueue[idx-1]=mergeQueue[idx]; mergeQueue[idx]=t; renderMergeList(); } }; item.el.querySelector('[data-act="down"]').onclick=function(){ if(idx<mergeQueue.length-1){ var t=mergeQueue[idx+1]; mergeQueue[idx+1]=mergeQueue[idx]; mergeQueue[idx]=t; renderMergeList(); } }; }); refreshMButtons(); }
+  function refreshMButtons(){ var any=mergeQueue.length>0; document.getElementById('runM').disabled=!any; document.getElementById('clearM').disabled=!any; }
+  function addMergeFiles(files){ Array.from(files||[]).forEach(function(f){ var ok=/\.pdf$/i.test(f.name)||/^image\/(png|jpeg)$/.test(f.type); if(!ok)return; var item={file:f,name:f.name,icon:/pdf/i.test(f.type)||/\.pdf$/i.test(f.name)?'📄':'🖼️',stat:fmtBytes(f.size)}; item._remove=function(it){ mergeQueue=mergeQueue.filter(function(x){return x!==it;}); (it._urls||[]).forEach(function(u){URL.revokeObjectURL(u);}); renderMergeList(); }; mergeQueue.push(item); }); renderMergeList(); }
+  document.getElementById('runM').addEventListener('click',async function(){ var btn=this,lbl=btn.textContent; btn.disabled=true; btn.textContent='⏳ Merging…'; var box={doc:null}; var dpi=document.getElementById('dpiM').value, q=document.getElementById('qM').value, pageMode=document.getElementById('imgPageM').value; var sum=document.getElementById('sumM'); try{ for(var i=0;i<mergeQueue.length;i++){ var item=mergeQueue[i]; item.statEl.textContent='Adding '+(i+1)+'/'+mergeQueue.length+'…'; item.barEl.style.width='5%'; if(/\.pdf$/i.test(item.file.name)||item.file.type==='application/pdf'){ var buf=await item.file.arrayBuffer(); var opened=await openPdf(buf); for(var p=1;p<=opened.pdf.numPages;p++){ item.statEl.textContent='PDF page '+p+'/'+opened.pdf.numPages; item.barEl.style.width=Math.round((p/opened.pdf.numPages)*100)+'%'; var pg=await opened.pdf.getPage(p); await addPdfPageRendered(box,pg,dpi,q); try{pg.cleanup&&pg.cleanup();}catch(e){} } try{opened.loadingTask&&opened.loadingTask.destroy&&opened.loadingTask.destroy();}catch(e){} } else { await addImageFileToPdf(box,item.file,pageMode); item.barEl.style.width='100%'; } item.statEl.textContent='✅ Added'; } if(!box.doc) throw new Error('No input pages'); var blob=new Blob([box.doc.output('arraybuffer')],{type:'application/pdf'}); var name='videha-merged-pdf-images.pdf'; mergeQueue[0].dlEl.innerHTML=''; fileDownloadLink(mergeQueue[0],blob,name,'⬇️ Merged PDF'); sum.innerHTML='✅ Merged file ready · '+fmtBytes(blob.size); sum.classList.add('show'); }catch(e){ sum.innerHTML='<span style="color:var(--crimson)">Merge error: '+esc(e.message||e)+'</span>'; sum.classList.add('show'); } btn.textContent=lbl; refreshMButtons(); });
+  document.getElementById('clearM').addEventListener('click',function(){ mergeQueue.forEach(function(x){(x._urls||[]).forEach(function(u){URL.revokeObjectURL(u);});}); mergeQueue=[]; document.getElementById('listM').innerHTML=''; document.getElementById('sumM').classList.remove('show'); refreshMButtons(); });
+
+  // ════════════════════ PNG/JPG TOOLS ════════════════════
+  var imageQueue=[], imageOutputs=[];
+  function refreshIButtons(){ var any=imageQueue.length>0, done=imageOutputs.length>0; document.getElementById('runI').disabled=!any; document.getElementById('clearI').disabled=!any; document.getElementById('zipI').disabled=!done; }
+  function addImageFiles(files){ Array.from(files||[]).forEach(function(f){ if(!/^image\/(png|jpeg)$/.test(f.type))return; var item={file:f,name:f.name,icon:'🖼️',stat:fmtBytes(f.size)}; item._remove=function(it){ imageQueue=imageQueue.filter(function(x){return x!==it;}); if(it.el)it.el.remove(); refreshIButtons(); }; imageQueue.push(item); makeSimpleFileRow(document.getElementById('listI'),item,imageQueue.length); }); refreshIButtons(); }
+  async function runImageTool(){ imageOutputs.forEach(function(o){ if(o.url)URL.revokeObjectURL(o.url);}); imageOutputs=[]; var mode=document.getElementById('modeI').value, fmt=document.getElementById('fmtI').value, ext=fmt==='image/png'?'.png':'.jpg'; var q=(+document.getElementById('qI').value||88)/100;
+    if(mode==='mergeV'||mode==='mergeH'){ var imgs=[]; for(var a=0;a<imageQueue.length;a++){ imageQueue[a].statEl.textContent='Loading…'; imgs.push(await loadImageElement(imageQueue[a].file)); imageQueue[a].barEl.style.width='100%'; }
+      var totalW=mode==='mergeV'?Math.max.apply(null,imgs.map(function(im){return im.naturalWidth||im.width;})):imgs.reduce(function(s,im){return s+(im.naturalWidth||im.width);},0);
+      var totalH=mode==='mergeV'?imgs.reduce(function(s,im){return s+(im.naturalHeight||im.height);},0):Math.max.apply(null,imgs.map(function(im){return im.naturalHeight||im.height;}));
+      var c=document.createElement('canvas'); c.width=totalW; c.height=totalH; var ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,totalW,totalH); var x=0,y=0; imgs.forEach(function(im){ ctx.drawImage(im,x,y); if(mode==='mergeV') y+=im.naturalHeight||im.height; else x+=im.naturalWidth||im.width; }); var blob=await canvasToBlob(c,q,fmt); disposeCanvas(c); imageOutputs.push({blob:blob,name:'videha-merged-images'+ext}); }
+    else if(mode==='pdf'){ var box={doc:null}, pageMode=document.getElementById('pdfPageI').value; for(var b=0;b<imageQueue.length;b++){ imageQueue[b].statEl.textContent='Adding to PDF…'; await addImageFileToPdf(box,imageQueue[b].file,pageMode); imageQueue[b].barEl.style.width='100%'; } if(box.doc){ var pdfBlob=new Blob([box.doc.output('arraybuffer')],{type:'application/pdf'}); imageOutputs.push({blob:pdfBlob,name:'videha-images-to-pdf.pdf'}); } }
+    else { for(var i=0;i<imageQueue.length;i++){ var item=imageQueue[i], img=await loadImageElement(item.file), w=img.naturalWidth||img.width, h=img.naturalHeight||img.height; var rows=1, cols=1, tw=w, th=h; if(mode==='tiles'){ rows=Math.max(1,+document.getElementById('rowsI').value||1); cols=Math.max(1,+document.getElementById('colsI').value||1); tw=Math.ceil(w/cols); th=Math.ceil(h/rows); } else { tw=Math.max(1,+document.getElementById('tileWI').value||1000); th=Math.max(1,+document.getElementById('tileHI').value||1000); cols=Math.ceil(w/tw); rows=Math.ceil(h/th); } var count=0; for(var r=0;r<rows;r++) for(var c2=0;c2<cols;c2++){ var sx=c2*tw, sy=r*th, sw=Math.min(tw,w-sx), sh=Math.min(th,h-sy); if(sw<=0||sh<=0)continue; var can=document.createElement('canvas'); can.width=sw; can.height=sh; can.getContext('2d').drawImage(img,sx,sy,sw,sh,0,0,sw,sh); var bl=await canvasToBlob(can,q,fmt); disposeCanvas(can); count++; imageOutputs.push({blob:bl,name:baseName(item.file.name)+'_tile_r'+(r+1)+'_c'+(c2+1)+ext}); item.barEl.style.width=Math.round((count/(rows*cols))*100)+'%'; } item.statEl.textContent='✅ '+count+' tile(s)'; } }
+    var sum=document.getElementById('sumI'); var bytes=imageOutputs.reduce(function(s,o){return s+o.blob.size;},0); sum.innerHTML='✅ <b>'+imageOutputs.length+'</b> output file(s) · '+fmtBytes(bytes); sum.classList.add('show'); if(imageOutputs.length===1 && imageQueue[0]) fileDownloadLink(imageQueue[0],imageOutputs[0].blob,imageOutputs[0].name,'⬇️ Download'); refreshIButtons(); }
+  document.getElementById('runI').addEventListener('click',async function(){ var btn=this,lbl=btn.textContent; btn.disabled=true; btn.textContent='⏳ Running…'; try{ await runImageTool(); }catch(e){ var sum=document.getElementById('sumI'); sum.innerHTML='<span style="color:var(--crimson)">Image tool error: '+esc(e.message||e)+'</span>'; sum.classList.add('show'); } btn.textContent=lbl; refreshIButtons(); });
+  document.getElementById('zipI').addEventListener('click',async function(){ if(!imageOutputs.length)return; if(imageOutputs.length===1){ triggerDownload(imageOutputs[0].blob,imageOutputs[0].name); return;} var zip=new JSZip(); imageOutputs.forEach(function(o){zip.file(o.name,o.blob);}); var blob=await zip.generateAsync({type:'blob',compression:'STORE'}); triggerDownload(blob,'videha-image-tools-output.zip'); });
+  document.getElementById('clearI').addEventListener('click',function(){ imageQueue=[]; imageOutputs=[]; document.getElementById('listI').innerHTML=''; document.getElementById('sumI').classList.remove('show'); refreshIButtons(); });
+
+  // ════════════════════ YOUTUBE AUTHORIZED AUDIO WORKFLOW ════════════════════
+  function ytIdFromUrl(u){ try{ var url=new URL(u); if(url.hostname.includes('youtu.be')) return url.pathname.replace('/',''); if(url.searchParams.get('v')) return url.searchParams.get('v'); var m=url.pathname.match(/\/(shorts|embed)\/([^/?]+)/); return m?m[2]:''; }catch(e){return '';} }
+  function makeYtNotes(){ var u=document.getElementById('ytUrl').value.trim(), id=ytIdFromUrl(u), purpose=document.getElementById('ytPurpose').value; var out=document.getElementById('ytOut'); var notes='Videha YouTube audio workflow\nURL: '+u+'\nVideo ID: '+(id||'not detected')+'\nUse case: '+purpose+'\n\nOnly use your own, authorized, Creative Commons, or public-domain content. This standalone page does not bypass YouTube restrictions and does not download copyrighted audio.'; out.textContent=notes; out.classList.add('show'); return notes; }
+  document.getElementById('ytMake').addEventListener('click',makeYtNotes);
+  document.getElementById('ytOpen').addEventListener('click',function(){ var u=document.getElementById('ytUrl').value.trim(); if(/^https?:\/\//i.test(u)) window.open(u,'_blank','noopener'); else alert('Please paste a valid YouTube URL.'); });
+  document.getElementById('ytCopy').addEventListener('click',async function(){ var txt=makeYtNotes(); try{ await navigator.clipboard.writeText(txt); }catch(e){} });
+
+  // ════════════════════ SPEECH TO TEXT ════════════════════
+  var SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition, stRec=null, stFinal='';
+  function stStatus(msg){ var s=document.getElementById('stStatus'); if(s){s.textContent=msg; s.classList.add('show');} }
+  document.getElementById('stStart').addEventListener('click',function(){ if(!SpeechRec){ stStatus('SpeechRecognition एहि browser मे उपलब्ध नहि। Chrome/Edge प्रयोग करू।'); return; } stFinal=document.getElementById('stText').value||''; stRec=new SpeechRec(); stRec.lang=document.getElementById('stLang').value; stRec.continuous=true; stRec.interimResults=document.getElementById('stInterim').checked; stRec.onstart=function(){ document.getElementById('stStart').disabled=true; document.getElementById('stStop').disabled=false; stStatus('Listening…'); }; stRec.onerror=function(e){ stStatus('Speech error: '+(e.error||'unknown')+'. Maithili fail भेल त hi-IN कोशिश करू।'); }; stRec.onend=function(){ document.getElementById('stStart').disabled=false; document.getElementById('stStop').disabled=true; stStatus('Stopped.'); }; stRec.onresult=function(ev){ var interim=''; for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) stFinal += (stFinal?' ':'') + t.trim(); else interim += t; } document.getElementById('stText').value = stFinal + (interim?'\n['+interim+']':''); }; try{ stRec.start(); }catch(e){ stStatus('Cannot start: '+e.message); } });
+  document.getElementById('stStop').addEventListener('click',function(){ try{stRec&&stRec.stop();}catch(e){} });
+  document.getElementById('stDownload').addEventListener('click',function(){ var blob=new Blob([document.getElementById('stText').value||''],{type:'text/plain;charset=utf-8'}); triggerDownload(blob,'videha-speech-to-text.txt'); });
+  document.getElementById('stCopy').addEventListener('click',async function(){ try{ await navigator.clipboard.writeText(document.getElementById('stText').value||''); stStatus('Copied.'); }catch(e){ stStatus('Copy failed; select text manually.'); } });
+  document.getElementById('stClear').addEventListener('click',function(){ document.getElementById('stText').value=''; stFinal=''; stStatus('Cleared.'); });
+
+  // ════════════════════ TEXT TO SPEECH + AUDIO RECORDING ════════════════════
+  function splitTtsChunks(txt){ txt=(txt||'').replace(/\s+/g,' ').trim(); if(!txt)return []; var chunks=[], max=220; while(txt.length>max){ var cut=Math.max(txt.lastIndexOf('।',max),txt.lastIndexOf('.',max),txt.lastIndexOf(',',max),txt.lastIndexOf(' ',max)); if(cut<80) cut=max; chunks.push(txt.slice(0,cut+1).trim()); txt=txt.slice(cut+1).trim(); } if(txt)chunks.push(txt); return chunks; }
+  function ttsStatus(msg){ var s=document.getElementById('ttsStatus'); if(s){s.textContent=msg; s.classList.add('show');} }
+  function populateVoices(){ var sel=document.getElementById('ttsVoice'); if(!sel||!window.speechSynthesis)return; var voices=speechSynthesis.getVoices(); var prev=sel.value; sel.innerHTML='<option value="">Browser default voice</option>'; voices.forEach(function(v,i){ var opt=document.createElement('option'); opt.value=String(i); opt.textContent=v.name+' · '+v.lang+(v.localService?' · local':''); sel.appendChild(opt); }); sel.value=prev; }
+  if(window.speechSynthesis){ populateVoices(); speechSynthesis.onvoiceschanged=populateVoices; }
+  ['ttsRate','ttsPitch'].forEach(function(id){ var el=document.getElementById(id), val=document.getElementById(id+'Val'); if(el&&val){ function up(){val.textContent=(+el.value).toFixed(1)+(id==='ttsRate'?'×':'');} el.addEventListener('input',up); up(); } });
+  function speakChunks(chunks, onEnd){ if(!window.speechSynthesis){ ttsStatus('SpeechSynthesis unavailable.'); if(onEnd)onEnd(); return; } var idx=0, voices=speechSynthesis.getVoices(); var vIndex=document.getElementById('ttsVoice').value; function next(){ if(idx>=chunks.length){ ttsStatus('Speech finished.'); if(onEnd)onEnd(); return; } var u=new SpeechSynthesisUtterance(chunks[idx++]); u.lang=document.getElementById('ttsLang').value; u.rate=+document.getElementById('ttsRate').value||1; u.pitch=+document.getElementById('ttsPitch').value||1; if(vIndex!==''&&voices[+vIndex]) u.voice=voices[+vIndex]; u.onend=next; u.onerror=function(e){ ttsStatus('TTS error: '+(e.error||'unknown')); if(onEnd)onEnd(); }; speechSynthesis.speak(u); } speechSynthesis.cancel(); next(); }
+  document.getElementById('ttsSpeak').addEventListener('click',function(){ var chunks=splitTtsChunks(document.getElementById('ttsText').value); if(!chunks.length){ttsStatus('Text खाली अछि।');return;} ttsStatus('Speaking '+chunks.length+' chunk(s)…'); speakChunks(chunks); });
+  document.getElementById('ttsPause').addEventListener('click',function(){ if(!window.speechSynthesis)return; if(speechSynthesis.paused){speechSynthesis.resume();ttsStatus('Resumed.');} else {speechSynthesis.pause();ttsStatus('Paused.');} });
+  document.getElementById('ttsStop').addEventListener('click',function(){ if(window.speechSynthesis) speechSynthesis.cancel(); ttsStatus('Stopped.'); });
+  function bestAudioMime(){ if(!window.MediaRecorder)return ''; var list=['audio/mpeg','audio/mp4','audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/webm']; for(var i=0;i<list.length;i++){ if(MediaRecorder.isTypeSupported(list[i])) return list[i]; } return ''; }
+  function extFromMime(m){ if(/mpeg/.test(m))return '.mp3'; if(/mp4/.test(m))return '.m4a'; if(/ogg/.test(m))return '.ogg'; return '.webm'; }
+  document.getElementById('ttsRecord').addEventListener('click',async function(){ var chunks=splitTtsChunks(document.getElementById('ttsText').value); if(!chunks.length){ttsStatus('Text खाली अछि।');return;} if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ ttsStatus('MediaRecorder/microphone unavailable; direct MP3 export browser मे सम्भव नहि।'); return; } var mime=bestAudioMime(); if(!mime){ttsStatus('No supported browser audio recording format found.');return;} var btn=this,lbl=btn.textContent; try{ var stream=await navigator.mediaDevices.getUserMedia({audio:true}); var rec=new MediaRecorder(stream,{mimeType:mime}); var parts=[]; rec.ondataavailable=function(e){ if(e.data&&e.data.size) parts.push(e.data); }; rec.onstop=function(){ stream.getTracks().forEach(function(t){t.stop();}); var blob=new Blob(parts,{type:mime}); triggerDownload(blob,'videha-text-to-speech-recording'+extFromMime(mime)); btn.textContent=lbl; btn.disabled=false; ttsStatus('Audio downloaded as '+extFromMime(mime).replace('.','').toUpperCase()+'. MP3 only when browser supports audio/mpeg.'); }; btn.disabled=true; btn.textContent='⏺️ Recording…'; rec.start(); ttsStatus('Recording microphone while browser speaks. Keep speakers audible or route system audio. Format: '+mime); speakChunks(chunks,function(){ setTimeout(function(){ try{rec.stop();}catch(e){} },500); }); }catch(e){ btn.textContent=lbl; btn.disabled=false; ttsStatus('Recording failed: '+(e.message||e)); } });
+  document.getElementById('ttsTxt').addEventListener('click',function(){ var blob=new Blob([document.getElementById('ttsText').value||''],{type:'text/plain;charset=utf-8'}); triggerDownload(blob,'videha-text-to-speech-script.txt'); });
+
   // ---- dropzone wiring ----
   function wireDrop(dropId, inputId, onFiles){
     var drop=document.getElementById(dropId), input=document.getElementById(inputId);
@@ -2296,7 +2659,10 @@ window.addEventListener('unhandledrejection', function(ev){
     drop.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files) onFiles(e.dataTransfer.files); });
   }
   wireDrop('dropC','fileC',addCompressFiles);
+  wireDrop('dropS','fileS',addSplitFiles);
+  wireDrop('dropM','fileM',addMergeFiles);
   wireDrop('dropV','fileV',addConvertFiles);
+  wireDrop('dropI','fileI',addImageFiles);
   wireDrop('dropP','fileP',addParseFiles);
   wireDrop('dropO','fileO',addOcrFiles);
 
