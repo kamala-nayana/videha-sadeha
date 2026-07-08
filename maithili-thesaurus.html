@@ -17,6 +17,23 @@ h1,h2,h3{font-family:'Playfair Display','Noto Serif Devanagari',serif;color:var(
 .panel{background:#FFFCF6;border:1px solid var(--line);border-left:3px solid var(--c);padding:12px 14px;margin:12px 0}.btn,button.btn{border:1px solid var(--c);background:transparent;color:var(--c)!important;padding:8px 11px;cursor:pointer;font-weight:700;text-decoration:none;font-family:'Noto Serif Devanagari','Libre Baskerville',serif}.btn:hover{background:var(--c);color:#fff!important}
 input{border:1px solid var(--line);background:#fffdf8;padding:9px;font-family:'Noto Serif Devanagari','Libre Baskerville',serif}.small{font-size:.84rem;color:var(--muted)}.two{display:grid;grid-template-columns:2fr auto auto;gap:8px}.tabs,.bar,.badges{display:flex;gap:6px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:transparent;color:var(--c);padding:7px 10px;cursor:pointer;font-weight:700}.tab.active,.tab:hover{background:var(--c);color:#fff}.badge{border:1px solid var(--line);background:#fff;padding:6px 9px;color:var(--i);font-size:.82rem}.card{background:#FFFCF6;border:1px solid var(--line);border-left:3px solid var(--g);padding:12px;margin:9px 0}.head{font-family:'Playfair Display','Noto Serif Devanagari',serif;font-size:1.22rem;color:var(--c);font-weight:700}.pos{font-size:.8rem;color:var(--muted);font-style:italic;margin-left:8px}.row{margin:.3rem 0;line-height:1.7}.row b{color:var(--i)}.notice{background:#fff;border:1px dashed var(--line);padding:9px 11px;margin-top:8px;color:var(--muted)}
 @media(max-width:900px){.two{grid-template-columns:1fr}.page{padding:16px}}
+
+    .vd-resource-hub{margin:16px 0 18px;padding:14px 16px;border:1px solid var(--vd-rule, #D8CFC0);background:linear-gradient(180deg,#fffdf8 0%,#fff6e8 100%);box-shadow:0 1px 0 rgba(139,26,26,.08);}
+    .vd-resource-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    .vd-resource-title{margin:0;color:var(--vd-crimson, #8B1A1A);font-family:'Playfair Display','Noto Serif Devanagari',serif;font-size:1.1rem}
+    .vd-resource-note{font-size:.84rem;color:var(--vd-ink-soft, #544D42)}
+    .vd-resource-box details{border:1px solid var(--vd-rule-soft, #E7DECB);background:#fff;margin:8px 0}
+    .vd-resource-box summary{list-style:none;cursor:pointer;padding:11px 14px;font-weight:700;color:var(--vd-indigo, #1F2A44);display:flex;align-items:center;gap:10px}
+    .vd-resource-box summary::-webkit-details-marker{display:none}
+    .vd-resource-box summary::before{content:"▸";font-size:1rem;color:var(--vd-crimson, #8B1A1A);transform:translateY(-1px);transition:transform .18s ease}
+    .vd-resource-box details[open] summary::before{transform:rotate(90deg)}
+    .vd-resource-links{padding:0 14px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+    .vd-resource-links a{display:block;text-decoration:none;color:var(--vd-crimson, #8B1A1A);background:#fffdf8;border:1px solid var(--vd-rule, #D8CFC0);padding:9px 10px;font-size:.92rem}
+    .vd-resource-links a:hover{background:#fff3d9}
+    .vd-flag{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;background:#8B1A1A;color:#fff;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;animation:vd-flag-wave 1.4s ease-in-out infinite}
+    .vd-flag::before{content:"⚑";font-size:.88rem}
+    @keyframes vd-flag-wave{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
 </style>
 </head>
 <body>
@@ -26,29 +43,66 @@ input{border:1px solid var(--line);background:#fffdf8;padding:9px;font-family:'N
 <header class="videha-masthead"><a aria-label="विदेह — मैथिली पाक्षिक ई-पत्रिका" class="videha-masthead-emblem" href="https://www.videha.co.in/index.htm"><img alt="विदेह प्रथम मैथिली पाक्षिक ई पत्रिका" class="videha-tirhuta-img" src="assets/img/videha-tirhuta-wordmark.png"></a></header>
 <nav class="videha-nav" role="navigation"><button aria-label="Menu" class="videha-nav-toggle" onclick="this.parentNode.querySelector('.videha-nav-inner').classList.toggle('open')">☰</button><div class="videha-nav-inner"><a href="https://www.videha.co.in/index.htm">विदेह नूतन अंक</a><a href="https://www.videha.co.in/videha.htm">विदेहक पुरान अंक</a><a href="https://www.videha.co.in/pothi.htm">विदेह पोथी</a><a href="https://www.videha.co.in/kids.htm">शिशु उत्सव</a><a href="https://www.videha.co.in/Audio_Video.htm">दृश्य-श्रव्य नाट्य उत्सव</a><a href="https://www.videha.co.in/femcorner.htm">स्त्री कोना</a><a href="https://www.videha.co.in/videha-elearning.htm">विदेह ई-लर्निङ्ग</a><a href="https://www.videha.co.in/ratna.htm">मिथिला रत्न</a><a href="https://www.videha.co.in/discovery.htm">मिथिलाक खोज</a><a href="https://www.videha.co.in/gajenthakur.htm">Parallel History</a><a href="https://www.videha.co.in/videha-converters.htm">Videha Converters</a><a href="https://www.videha.co.in/archive.htm">पेटार / Archive</a></div></nav>
 <main class="videha-main-content" id="videha-main" tabindex="-1"><section class="page"><div class="title">
-<div class="videha-thesaurus-link" style="max-width:1120px;margin:12px auto;padding:10px 14px;border:1px solid #D8CFC0;background:#FFFCF6;text-align:center;font-family:'Noto Serif Devanagari',Georgia,serif;">
-  <a href="https://videha-ejournal.github.io/videha-thesaurus-search.html" style="font-weight:700;color:#8B1A1A;text-decoration:none;">विदेह सदेह थिसॉरस खोजू · Search English-Maithili / Maithili-English Thesaurus</a>
-</div>
-<div class="videha-featured-pdf-links" style="max-width:1120px;margin:8px auto 16px;padding:12px 14px;border:1px solid #D8CFC0;border-left:5px solid #8B1A1A;background:#FFF8E8;text-align:center;font-family:'Noto Serif Devanagari',Georgia,serif;box-shadow:0 1px 0 rgba(139,26,26,.08);">
-  <div style="font-weight:700;color:#5B1717;margin-bottom:8px;letter-spacing:.01em;">⭐ Featured थिसॉरस PDF · github.com</div>
-  <div style="margin:0 0 10px;display:flex;justify-content:center;flex-wrap:wrap;">
-    <a href="https://videha-ejournal.github.io/index.html" target="_blank" rel="noopener" style="font-weight:700;color:#8B1A1A;text-decoration:none;border:1px solid #D8CFC0;background:#FFFCF6;padding:8px 12px;display:inline-block;box-shadow:0 1px 0 rgba(139,26,26,.08);">↗ Videha Thesaurus पूरा standalone पन्ना खोलू</a>
-  </div>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-    <a href="https://videha-ejournal.github.io/English_Maithili_Thesaurus.pdf" target="_blank" rel="noopener" style="font-weight:700;color:#8B1A1A;text-decoration:none;border:1px solid #D8CFC0;background:#fff;padding:8px 12px;display:inline-block;">⭐ English Maithili Thesaurus Github Part 1</a>
-    <a href="https://videha-ejournal.github.io/English_Maithili_Thesaurus_Part_2.pdf" target="_blank" rel="noopener" style="font-weight:700;color:#8B1A1A;text-decoration:none;border:1px solid #D8CFC0;background:#fff;padding:8px 12px;display:inline-block;">⭐ English Maithili Thesaurus Github Part 2</a>
-    <a href="https://videha-ejournal.github.io/Maithili_English_Thesaurus.pdf" target="_blank" rel="noopener" style="font-weight:700;color:#8B1A1A;text-decoration:none;border:1px solid #D8CFC0;background:#fff;padding:8px 12px;display:inline-block;">⭐ Maithili English Thesaurus Github</a>
-  </div>
-</div>
 <h1>विदेह मैथिली थेसॉरस</h1><p>मैथिली-English, English-Maithili, आई.टी. शब्दावली, समानार्थी आ विलोम कोश — विदेहक अद्यतन थेसॉरस-पृष्ठ।</p><div class="badges" id="stats"><span class="badge">डेटा-सूची लोड भऽ रहल अछि…</span></div><div id="dataLoadStatus" class="small" style="margin-top:8px;color:#544D42">डेटा-सूची जाँच भऽ रहल अछि…</div></div>
-<div class="panel"><div class="two"><input id="q" type="search" placeholder="ताकू: abandon, दर्पण, mirror, समानार्थी, विलोम…" oninput="queueSearch()" onkeydown="if(event.key==='Escape'){this.value='';queueSearch();}"><button class="btn" onclick="queueSearch(true)">🔍 ताकू</button><button class="btn" onclick="fullSearch()">पूर्ण खोज</button></div><div class="bar" id="letters" style="margin-top:8px"></div><div class="tabs" id="tabs" style="margin-top:10px"></div><div class="small" id="meta"></div><div class="notice">पृष्ठ तुरन्त खुले, तेँ आरम्भमे केवल बीचक नमूना सूची देखाओल जाइत अछि — A अथवा अ सँ शुरुआत नहि। कोनो अक्षर चुनलापर ओहि अक्षर-समूहक data load भऽ कऽ खोज होइत अछि। “पूर्ण खोज” दबेलापर ओहि tab केर सभ data load होइत अछि।</div></div>
+<div class="panel"><div class="notice">ई पृष्ठ पर नीचे देल unified final search box आब Videha final combined backend सँ सीधा जुड़ल अछि।</div></div>
+
 <!-- VIDEHA JSON-SHARD THESAURUS SEARCH WIDGET: start -->
+
+<section class="vd-resource-hub" aria-label="Thesaurus download links and software">
+  <div class="vd-resource-head">
+    <h2 class="vd-resource-title">विदेह थिसॉरस डाउनलोड आ सॉफ्टवेयर</h2>
+    <div class="vd-resource-note">खोलू त्रिकोण क्लिक करू। पुरान link हटा देल गेल अछि; एतय अद्यतन PDF आ software package अछि।</div>
+  </div>
+  <div class="vd-resource-box">
+    <details>
+      <summary>VIDEHA ENGLISH MAITHILI THESAURUS</summary>
+      <div class="vd-resource-links">
+        <a href="https://videha-ejournal.github.io/Videha_English_Maithili_Thesaurus_Part_01_of_05.pdf" target="_blank" rel="noopener">GitHub Part 01 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_English_Maithili_Thesaurus_Part_02_of_05.pdf" target="_blank" rel="noopener">GitHub Part 02 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_English_Maithili_Thesaurus_Part_03_of_05.pdf" target="_blank" rel="noopener">GitHub Part 03 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_English_Maithili_Thesaurus_Part_04_of_05.pdf" target="_blank" rel="noopener">GitHub Part 04 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_English_Maithili_Thesaurus_Part_05_of_05.pdf" target="_blank" rel="noopener">GitHub Part 05 of 05</a>
+        <a href="https://archive.org/download/videha-thesaurus/Videha_English_Maithili_Thesaurus.pdf" target="_blank" rel="noopener">Archive.org single volume</a>
+      </div>
+    </details>
+    <details>
+      <summary>VIDEHA MAITHILI ENGLISH THESAURUS</summary>
+      <div class="vd-resource-links">
+        <a href="https://videha-ejournal.github.io/Videha_Maithili_English_Thesaurus_Part_01_of_05.pdf" target="_blank" rel="noopener">GitHub Part 01 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_Maithili_English_Thesaurus_Part_02_of_05.pdf" target="_blank" rel="noopener">GitHub Part 02 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_Maithili_English_Thesaurus_Part_03_of_05.pdf" target="_blank" rel="noopener">GitHub Part 03 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_Maithili_English_Thesaurus_Part_04_of_05.pdf" target="_blank" rel="noopener">GitHub Part 04 of 05</a>
+        <a href="https://videha-ejournal.github.io/Videha_Maithili_English_Thesaurus_Part_05_of_05.pdf" target="_blank" rel="noopener">GitHub Part 05 of 05</a>
+        <a href="https://archive.org/download/videha-thesaurus/Videha_Maithili_English_Thesaurus.pdf" target="_blank" rel="noopener">Archive.org single volume</a>
+      </div>
+    </details>
+    <details>
+      <summary><span class="vd-flag">Software</span> VIDEHA THESAURUS APP FOR WINDOWS / MAC OS / LINUX</summary>
+      <div class="vd-resource-links">
+        <a href="https://archive.org/download/videha-thesaurus/WINDOWS_MACOS_LINUX.zip" target="_blank" rel="noopener">Archive.org software package download</a>
+      </div>
+    </details>
+  </div>
+</section>
+
 <section class="videha-json-widget" aria-label="विदेह थेसॉरस JSON खोज">
   <h2>मैथिली थेसॉरस JSON-shard खोज</h2>
-  <p class="vjw-note">ई खोज GitHub Pages पर राखल छोट JSON shards सँ चलैत अछि; पूरा XLSB ब्राउजरमे लोड नहि होइत।</p>
-  <div class="vjw-row">
-    <input id="vjwInput" type="search" placeholder="ताकू: अकट, दर्पण, mirror, abandon, synonym, antonym…" autocomplete="off">
+  <p class="vjw-note">ई खोज GitHub Pages पर राखल छोट JSON shards सँ चलैत अछि; query अनुसार English-Maithili, Maithili-English, synonym, antonym, IT glossary, WordNet-सदृश section filter होइत अछि।</p>
+  <div class="vjw-row vjw-row-main">
+    <input id="vjwInput" type="search" placeholder="ताकू: अकट, दर्पण, mirror, abandon, synonym, antonym, internet…" autocomplete="off">
+    <select id="vjwScope" aria-label="Search scope">
+      <option value="both">दुनू कोश</option>
+      <option value="db1">English-Maithili</option>
+      <option value="db2">Maithili-English</option>
+    </select>
     <button type="button" id="vjwBtn">🔍 ताकू</button>
+  </div>
+  <div class="vjw-filter-row">
+    <label><input type="checkbox" id="vjwBase" checked> मूल अर्थ</label>
+    <label><input type="checkbox" id="vjwSyn" checked> synonym</label>
+    <label><input type="checkbox" id="vjwAnt" checked> antonym</label>
+    <label><input type="checkbox" id="vjwIT" checked> IT glossary</label>
+    <label><input type="checkbox" id="vjwWordNet" checked> WordNet / relation</label>
   </div>
   <div id="vjwStatus" class="vjw-status">डेटा-सूची लोड भऽ रहल अछि…</div>
   <div id="vjwResults" class="vjw-results"><div class="vjw-empty">ऊपर शब्द लिखू — मैथिली-अंग्रेजी आ English-Maithili दुनू database मे खोज होयत।</div></div>
@@ -56,66 +110,30 @@ input{border:1px solid var(--line);background:#fffdf8;padding:9px;font-family:'N
 <style id="videha-json-widget-style">
 .videha-json-widget{background:#FFFCF6;border:1px solid #D8CFC0;border-left:3px solid #8B1A1A;margin:12px 0 16px;padding:13px 15px;font-family:'Noto Serif Devanagari','Libre Baskerville',Georgia,serif;color:#23201B}
 .videha-json-widget h2{margin:.1rem 0 .35rem;color:#8B1A1A;font-family:'Playfair Display','Noto Serif Devanagari',serif;font-size:1.22rem}
-.vjw-note{margin:.1rem 0 .7rem;color:#544D42;font-size:.86rem;line-height:1.65}.vjw-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.vjw-row input{width:100%;border:1px solid #D8CFC0;background:#fffdf8;padding:9px 11px;font-family:'Noto Serif Devanagari','Libre Baskerville',serif;font-size:.96rem}.vjw-row button{border:1px solid #8B1A1A;background:transparent;color:#8B1A1A;padding:9px 13px;cursor:pointer;font-weight:700;font-family:'Noto Serif Devanagari','Libre Baskerville',serif}.vjw-row button:hover{background:#8B1A1A;color:#fff}.vjw-status{font-size:.82rem;color:#544D42;margin:.65rem 0 .45rem}.vjw-results{max-height:430px;overflow:auto}.vjw-card{background:#fff;border:1px solid #E7DECB;border-left:3px solid #C49A3C;margin:8px 0;padding:9px 11px}.vjw-head{font-family:'Playfair Display','Noto Serif Devanagari',serif;color:#8B1A1A;font-size:1.08rem;font-weight:700}.vjw-meta{font-size:.75rem;color:#6E5C48;margin-top:2px}.vjw-meaning{font-size:.88rem;line-height:1.65;margin-top:5px;color:#23201B}.vjw-empty{background:#fff;border:1px dashed #D8CFC0;color:#544D42;padding:13px;text-align:center}.vjw-results mark{background:#ffeb99;color:inherit;padding:0 2px;border-radius:2px}@media(max-width:680px){.vjw-row{grid-template-columns:1fr}.vjw-row button{width:100%}}
+.vjw-note{margin:.1rem 0 .7rem;color:#544D42;font-size:.86rem;line-height:1.65}
+.vjw-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.vjw-row input,.vjw-row select{width:100%;border:1px solid #D8CFC0;background:#fffdf8;padding:9px 11px;font-family:'Noto Serif Devanagari','Libre Baskerville',serif;font-size:.96rem}
+.vjw-row button{border:1px solid #8B1A1A;background:transparent;color:#8B1A1A;padding:9px 13px;cursor:pointer;font-weight:700;font-family:'Noto Serif Devanagari','Libre Baskerville',serif}
+.vjw-row button:hover{background:#8B1A1A;color:#fff}
+.vjw-filter-row{display:flex;gap:12px;flex-wrap:wrap;margin:.65rem 0 .35rem;font-size:.84rem;color:#544D42}
+.vjw-filter-row label{display:inline-flex;gap:6px;align-items:center}
+.vjw-status{font-size:.82rem;color:#544D42;margin:.65rem 0 .45rem}
+.vjw-results{max-height:430px;overflow:auto}
+.vjw-card{background:#fff;border:1px solid #E7DECB;border-left:3px solid #C49A3C;margin:8px 0;padding:9px 11px}
+.vjw-head{font-family:'Playfair Display','Noto Serif Devanagari',serif;color:#8B1A1A;font-size:1.08rem;font-weight:700}
+.vjw-meta{font-size:.75rem;color:#6E5C48;margin-top:2px}
+.vjw-meaning{font-size:.88rem;line-height:1.65;margin-top:5px;color:#23201B}
+.vjw-empty{background:#fff;border:1px dashed #D8CFC0;color:#544D42;padding:13px;text-align:center}
+.vjw-results mark{background:#ffeb99;color:inherit;padding:0 2px;border-radius:2px}
+@media(max-width:680px){.vjw-row{grid-template-columns:1fr}.vjw-row button{width:100%}}
 </style>
-<script id="videha-json-widget-script">
-(function(){
-  if(window.__VIDEHA_JSON_SHARD_WIDGET_LOADED__) return;
-  window.__VIDEHA_JSON_SHARD_WIDGET_LOADED__ = true;
-  var ROOT = 'https://videha-ejournal.github.io/videha-sadeha/thesaurus-json-shards/';
-  var manifest = null, cache = {}, timer = null, token = 0;
-  var DEVA2PLAIN=[['क्ष','ksh'],['ज्ञ','gn'],['त्र','tr'],['ख','kh'],['घ','gh'],['छ','ch'],['झ','jh'],['ठ','th'],['ढ','dh'],['थ','th'],['ध','dh'],['फ','ph'],['भ','bh'],['क','k'],['ग','g'],['ङ','ng'],['च','ch'],['ज','j'],['ञ','n'],['ट','t'],['ड','d'],['ण','n'],['त','t'],['द','d'],['न','n'],['प','p'],['ब','b'],['म','m'],['य','y'],['र','r'],['ल','l'],['व','v'],['श','s'],['ष','s'],['स','s'],['ह','h'],['अ','a'],['आ','aa'],['इ','i'],['ई','ii'],['उ','u'],['ऊ','uu'],['ए','e'],['ऐ','ai'],['ओ','o'],['औ','au'],['ऋ','ri'],['ा','aa'],['ि','i'],['ी','ii'],['ु','u'],['ू','uu'],['े','e'],['ै','ai'],['ो','o'],['ौ','au'],['ृ','ri'],['ं','n'],['ँ','n'],['ः','h'],['्','']];
-  var ROMAN=[['ā','aa'],['ī','ii'],['ū','uu'],['ṛ','ri'],['ṝ','ri'],['ḷ','l'],['ṅ','ng'],['ñ','n'],['ṭ','t'],['ḍ','d'],['ṇ','n'],['ś','s'],['ṣ','s'],['á','a'],['à','a'],['â','a'],['ä','a'],['ã','a'],['é','e'],['è','e'],['ê','e'],['ë','e'],['í','i'],['ì','i'],['î','i'],['ï','i'],['ó','o'],['ò','o'],['ô','o'],['ö','o'],['ú','u'],['ù','u'],['û','u'],['ü','u']];
-  var COLL=[['w','v'],['f','ph'],['x','ksh'],['q','k'],['z','j'],['sh','s'],['aa','a'],['ee','i'],['ii','i'],['oo','u'],['uu','u'],['ai','e'],['au','o'],['kk','k'],['gg','g'],['cc','c'],['jj','j'],['tt','t'],['dd','d'],['pp','p'],['bb','b'],['mm','m'],['nn','n'],['ll','l'],['rr','r'],['ss','s'],['hh','h'],['vv','v'],['yy','y'],['rii','ri'],['ru','ri']];
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-  function phoneticKey(text){var s=String(text||''); if(/[\u0900-\u097F]/.test(s)){for(var i=0;i<DEVA2PLAIN.length;i++) s=s.split(DEVA2PLAIN[i][0]).join(DEVA2PLAIN[i][1]);} s=s.toLowerCase(); for(var j=0;j<ROMAN.length;j++) s=s.split(ROMAN[j][0]).join(ROMAN[j][1]); for(var k=0;k<COLL.length;k++) s=s.split(COLL[k][0]).join(COLL[k][1]); return s.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
-  function bucket(q){var key=phoneticKey(q), tok=(key.split(/\s+/)[0]||'').replace(/[^a-z0-9]/g,''); return tok?tok.slice(0,2):'';}
-  function rowText(r){return (r||[]).map(function(x){return String(x==null?'':x);}).join(' | ');} 
-  function rowMatches(r,q){var raw=rowText(r).toLowerCase(), needle=String(q||'').toLowerCase(); if(raw.indexOf(needle)>=0) return true; var k=phoneticKey(q); return k && phoneticKey(raw).indexOf(k)>=0;}
-  function loadManifest(){if(manifest) return Promise.resolve(manifest); return fetch(ROOT+'manifest.json',{cache:'no-store'}).then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); return r.json();}).then(function(m){manifest=m; return m;});}
-  function loadShard(path){if(cache[path]) return Promise.resolve(cache[path]); return fetch(ROOT+path,{cache:'force-cache'}).then(function(r){if(!r.ok) throw new Error('HTTP '+r.status+' '+path); return r.json();}).then(function(d){cache[path]=d; return d;});}
-  function matchingShards(sheet,q){var b=bucket(q); if(!sheet || !sheet.shards) return []; if(!b) return []; if(b.length===1) return sheet.shards.filter(function(s){return String(s.key||'').indexOf(b)===0;}); return sheet.shards.filter(function(s){return s.key===b;});}
-  function setStatus(html){var el=document.getElementById('vjwStatus'); if(el) el.innerHTML=html;}
-  function renderResults(items,q){var box=document.getElementById('vjwResults'); if(!box) return; if(!items.length){box.innerHTML='<div class="vjw-empty">कोनो परिणाम नहि भेटल। Roman/Devanagari वैकल्पिक spelling सँ फेर ताकू।</div>'; return;} var shown=items.slice(0,60); var html=''; shown.forEach(function(e){var r=e.row||[], head=r[2]||'', meaning=r.slice(3).join(' ; '), section=r[1]||e.sheet||''; html+='<div class="vjw-card"><div class="vjw-head">'+esc(head)+'</div><div class="vjw-meta">'+esc(e.dbLabel)+' · '+esc(e.sheet)+' · '+esc(section)+'</div><div class="vjw-meaning">'+esc(meaning)+'</div></div>';}); box.innerHTML=html;}
-  function doSearch(){var input=document.getElementById('vjwInput'), q=input?input.value.trim():''; var my=++token; if(!q){setStatus('डेटा-सूची तैयार अछि। शब्द लिखू।'); renderResults([],q); var box=document.getElementById('vjwResults'); if(box) box.innerHTML='<div class="vjw-empty">ऊपर शब्द लिखू — मैथिली-अंग्रेजी आ English-Maithili दुनू database मे खोज होयत।</div>'; return;} setStatus('⏳ "<b>'+esc(q)+'</b>" लेल JSON shard लोड भऽ रहल अछि…'); loadManifest().then(function(m){var jobs=[]; ['db1','db2'].forEach(function(dbKey){var db=m.dbs&&m.dbs[dbKey]; if(!db) return; (db.sheets||[]).forEach(function(sheet){var shards=matchingShards(sheet,q); shards.forEach(function(sh){jobs.push(loadShard(sh.path).then(function(data){var out=[];(data.rows||[]).forEach(function(r){if(rowMatches(r,q)) out.push({dbKey:dbKey,dbLabel:db.label||dbKey,sheet:sheet.name,row:r});}); return out;}));});});}); return Promise.all(jobs);}).then(function(parts){if(my!==token) return; var flat=[]; parts.forEach(function(a){flat=flat.concat(a);}); setStatus('🔍 "<b>'+esc(q)+'</b>" — '+flat.length+' परिणाम'+(flat.length>60?' (पहिल 60 देखाइत)':'')+'. स्रोत: GitHub JSON shards.'); renderResults(flat,q);}).catch(function(err){if(my!==token) return; setStatus('⚠️ JSON shards नहि खुलल: '+esc(err.message||err)); var box=document.getElementById('vjwResults'); if(box) box.innerHTML='<div class="vjw-empty">GitHub root मे <b>thesaurus-json-shards/</b> folder upload भेल अछि कि नहि, जाँचू।</div>';});}
-  function init(){var btn=document.getElementById('vjwBtn'), input=document.getElementById('vjwInput'); if(btn) btn.addEventListener('click',doSearch); if(input){input.addEventListener('input',function(){clearTimeout(timer); timer=setTimeout(doSearch,450);}); input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault(); clearTimeout(timer); doSearch();}});} loadManifest().then(function(m){var total=0; ['db1','db2'].forEach(function(k){var db=m.dbs&&m.dbs[k]; if(db){(db.sheets||[]).forEach(function(s){total+=Number(s.count||0);});}}); setStatus('✅ JSON shards तैयार अछि — कुल '+total.toLocaleString('en-IN')+' प्रविष्टि।');}).catch(function(){setStatus('⚠️ JSON manifest नहि भेटल। GitHub root मे thesaurus-json-shards folder upload करू।');});}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-})();
-</script>
+<script src="https://videha-ejournal.github.io/assets/js/videha-final-thesaurus-unified.js"></script>
 <!-- VIDEHA JSON-SHARD THESAURUS SEARCH WIDGET: end -->
-
-<div id="results"><div class="panel">Search results एतय देखायत।</div></div></section></main>
+</main>
 <footer class="videha-footer-simple"><div class="videha-footer-inner"><div class="videha-footer-left">Videha — First Maithili Fortnightly eJournal ISSN 2229-547X<br>© Gajendra Thakur, Editor — Videha eJournal</div><div class="videha-footer-links"><a href="https://www.videha.co.in/">www.videha.co.in</a><a href="maithili-thesaurus.html">मैथिली थेसॉरस</a></div></div></footer>
-<script src="dictionary-data/manifest.js?v=20260628fastdynamic2"></script>
-<script>
-let MAN=window.VIDEHA_THESAURUS_MANIFEST||{counts:{},groups:{},prefixCounts:{},preview:{},labels:{}};
-let D=window.VIDEHA_THESAURUS_DATA=window.VIDEHA_THESAURUS_DATA||{};
-let active='maithili_english';
-let loadedFiles={}; let loadedAll={}; let timer=null; const MAX=300;
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function norm(s){return String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
-function join(x){return norm(Array.isArray(x)?x.join(' '):Object.values(x||{}).join(' '))}
-function fmt(n){return Number(n||0).toLocaleString('en-IN')}
-function label(k){return (MAN.labels&&MAN.labels[k])||k}
-function setLoadStatus(msg,isError){let el=document.getElementById('dataLoadStatus');if(el){el.style.color=isError?'#8B1A1A':'#544D42';el.innerHTML=msg}}
-function cats(){return ['maithili_english','english_maithili','it_glossary','maithili_english_synonyms','maithili_english_antonyms','english_maithili_synonyms','english_maithili_antonyms']}
-function init(){stats();tabs();letters();renderPreview();setLoadStatus('✅ डेटा-सूची लोड भेल। खोज/अक्षर चुनलापर आवश्यक chunk मात्र लोड होएत।')}
-function stats(){document.getElementById('stats').innerHTML=cats().map(k=>`<span class="badge"><b>${label(k)}</b>: ${fmt(MAN.counts[k])}</span>`).join('')}
-function tabs(){document.getElementById('tabs').innerHTML=cats().map(k=>`<button class="tab ${active===k?'active':''}" onclick="active='${k}';tabs();document.getElementById('q').value='';renderPreview();">${label(k)}</button>`).join('')}
-function letters(){let a='ABCDEFGHIJKLMNOPQRSTUVWXYZ अ आ इ ई उ ऊ ऋ ए ऐ ओ औ ऑ क ख ग घ ङ च छ ज झ ञ ट ठ ड ढ ण त थ द ध न प फ ब भ म य र ल व श ष स ह'.split(' ');document.getElementById('letters').innerHTML='<button class="tab" onclick="document.getElementById(\'q\').value=\'\';renderPreview();">बीचक सूची</button>'+a.map(x=>`<button class="tab" onclick="document.getElementById('q').value='${x}';queueSearch(true);">${x}</button>`).join('')}
-function renderPreview(){let rows=(MAN.preview&&MAN.preview[active])||[];document.getElementById('meta').textContent=`${fmt(rows.length)} नमूना परिणाम · ${label(active)} · कुल ${fmt(MAN.counts[active])}`;render(rows.map(r=>({r,type:active})));}
-function detectPrefix(q){q=String(q||'').trim();for(let ch of q){let up=ch.toUpperCase();if(up>='A'&&up<='Z')return up;if(ch>='\u0900'&&ch<='\u097F'&&!('ँंःािीुूृॄॅॆेैॉॊोौ्'.includes(ch)))return ch;if(/[0-9]/.test(ch))return '0-9';}return '';}
-function loadScript(src){return new Promise(resolve=>{if(loadedFiles[src]){resolve(true);return;}let sc=document.createElement('script');let done=false;let finish=(ok)=>{if(done)return;done=true;clearTimeout(to);if(ok)loadedFiles[src]=true;resolve(ok)};let to=setTimeout(()=>finish(false),20000);sc.onload=()=>finish(true);sc.onerror=()=>finish(false);sc.src='dictionary-data/'+src+'?v=20260628fastdynamic2';document.head.appendChild(sc);});}
-async function loadFiles(files, labelText){let failed=[];for(let i=0;i<files.length;i++){setLoadStatus(labelText+' '+(i+1)+'/'+files.length+' लोड भऽ रहल अछि…');let ok=await loadScript(files[i]);if(!ok)failed.push(files[i]);}if(failed.length){setLoadStatus('⚠️ नहि लोड भेल: '+failed.join(', ')+' — dictionary-data folder जाँचू।',true);return false;}setLoadStatus('✅ '+labelText+' लोड भेल।');return true;}
-async function ensurePrefix(cat,pref){let files=(((MAN.groups||{})[cat]||{})[pref])||[];if(!files.length)return false;return await loadFiles(files,label(cat)+' '+pref);}
-async function ensureAll(cat){if(loadedAll[cat])return true;let groups=(MAN.groups||{})[cat]||{};let files=[];Object.keys(groups).forEach(k=>files=files.concat(groups[k]));let ok=await loadFiles(files,label(cat)+' पूर्ण data');if(ok)loadedAll[cat]=true;return ok;}
-function queueSearch(now){clearTimeout(timer);timer=setTimeout(()=>runSearch(false),now?0:250)}
-async function fullSearch(){await runSearch(true)}
-async function runSearch(full){let q=norm(document.getElementById('q').value);if(!q){renderPreview();return;}if(full){await ensureAll(active);}else{let p=detectPrefix(document.getElementById('q').value);let ok=await ensurePrefix(active,p);if(!ok){document.getElementById('results').innerHTML='<div class="panel">ई अक्षर-समूहक अलग data नहि भेटल। पूर्ण खोज दबाउ।</div>';return;}}let src=D[active]||[];let out=[];for(let i=0;i<src.length;i++){let x={r:src[i],type:active};if(join(x.r).includes(q)){out.push(x);if(out.length>=MAX)break;}}let fullNote=loadedAll[active]?'पूर्ण data':'लोड भेल अक्षर-समूह';document.getElementById('meta').textContent=`${fmt(out.length)} परिणाम देखाइत · ${label(active)} · ${fullNote} · ताकू: ${q}`;render(out)}
-function f(l,v){return v?`<div class="row"><b>${l}:</b> ${esc(v)}</div>`:''}
-function card(x){let r=x.r,t=x.type;if(t==='english_maithili')return `<div class="card"><div class="head">${esc(r[0])}<span class="pos">${esc(r[1])}</span></div>${f('मैथिली अर्थ 1',r[2])}${f('मैथिली अर्थ 2',r[3])}</div>`;if(t==='maithili_english')return `<div class="card"><div class="head">${esc(r[0])}<span class="pos">${esc(r[1])}</span></div>${f('अर्थ-संक्षेप',r[2])}${f('समानार्थी',r[3])}${f('व्युत्पत्ति',r[4])}${f('यौगिक/व्युत्पन्न',r[5])}${f('सन्दर्भ',r[6])}${f('English Gloss',r[9])}</div>`;if(t==='it_glossary')return `<div class="card"><div class="head">${esc(r[0])}<span class="pos">${esc(r[1])}</span></div>${f('मैथिली अर्थ 1',r[2])}${f('मैथिली अर्थ 2',r[3])}</div>`;if(t==='english_maithili_synonyms')return `<div class="card"><div class="head">${esc(r[0])} ⇄ ${esc(r[1])}</div>${f('Maithili',r[2])}${f('Maithili synonym',r[3])}</div>`;if(t==='english_maithili_antonyms')return `<div class="card"><div class="head">${esc(r[0])} ↔ ${esc(r[1])}</div>${f('Maithili',r[2])}${f('Maithili antonym',r[3])}</div>`;if(t==='maithili_english_synonyms')return `<div class="card"><div class="head">${esc(r[0])} ⇄ ${esc(r[1])}</div>${f('English',r[2])}${f('English synonym',r[3])}</div>`;if(t==='maithili_english_antonyms')return `<div class="card"><div class="head">${esc(r[0])} ↔ ${esc(r[1])}</div>${f('English',r[2])}${f('English antonym',r[3])}</div>`;return `<div class="card">${esc(JSON.stringify(r))}</div>`}
-function render(rows){document.getElementById('results').innerHTML=rows.length?rows.map(card).join(''):'<div class="panel">कोनो परिणाम नहि।</div>'}
-window.addEventListener('DOMContentLoaded',init);
-</script>
 </body>
 </html>
+
+
+
+
