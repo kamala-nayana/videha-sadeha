@@ -181,8 +181,8 @@
     <input id="vjwInput" type="search" placeholder="ताकू: अकट, दर्पण, mirror, abandon, synonym, antonym, internet…" autocomplete="off">
     <select id="vjwScope" aria-label="Search scope">
       <option value="both">दुनू कोश</option>
-      <option value="db1">English-Maithili</option>
-      <option value="db2">Maithili-English</option>
+      <option value="em">English-Maithili</option>
+      <option value="me">Maithili-English</option>
     </select>
     <button type="button" id="vjwBtn">🔍 ताकू</button>
   </div>
@@ -228,7 +228,7 @@
     root: ROOT,
     base: ROOT,
     dataRoot: ROOT,
-    manifestUrl: ROOT + 'manifest.json'
+    manifestUrl: ROOT + 'data/manifest.json'
   });
   function splitUrl(s){
     var q = s.indexOf('?');
@@ -238,7 +238,7 @@
     if (!value) return value;
     var s = String(value);
     var parts = splitUrl(s), path = parts.path, query = parts.query;
-    if (/^(\.\/)?manifest\.json$/i.test(path) || /\/manifest\.json$/i.test(path)) return ROOT + 'manifest.json' + query;
+    if (/^(\.\/)?manifest\.json$/i.test(path) || /^(\.\/)?data\/manifest\.json$/i.test(path) || /\/data\/manifest\.json$/i.test(path)) return ROOT + 'data/manifest.json' + query;
     var marker = 'thesaurus-json-shards/';
     var idx = path.indexOf(marker);
     if (idx >= 0) return ROOT + path.slice(idx + marker.length) + query;
@@ -270,7 +270,7 @@
   }
 })();
 </script>
-<script src="https://videha-ejournal.github.io/assets/js/videha-final-thesaurus-unified.js?v=20260708-searchfix-2"></script>
+<script src="https://videha-ejournal.github.io/assets/js/videha-final-thesaurus-unified.js?v=20260708-searchfix-4"></script>
 <!-- VIDEHA JSON-SHARD THESAURUS SEARCH WIDGET: end -->
 
 
