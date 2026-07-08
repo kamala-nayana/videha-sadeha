@@ -101,6 +101,60 @@
 .vjw-results mark{background:#ffeb99;color:inherit;padding:0 2px;border-radius:2px}
 @media(max-width:680px){.vjw-row{grid-template-columns:1fr}.vjw-row button{width:100%}}
 </style>
+<script id="videha-root-thesaurus-source-guard">
+(function(){
+  var ROOT = 'https://videha-ejournal.github.io/';
+  window.VIDEHA_THESAURUS_ROOT = ROOT;
+  window.VIDEHA_THESAURUS_BASE = ROOT;
+  window.VIDEHA_THESAURUS_DATA_ROOT = ROOT;
+  window.VIDEHA_FINAL_THESAURUS_ROOT = ROOT;
+  window.VIDEHA_THESAURUS_MANIFEST_URL = ROOT + 'manifest.json';
+  window.VIDEHA_THESAURUS_CONFIG = Object.assign({}, window.VIDEHA_THESAURUS_CONFIG || {}, {
+    root: ROOT,
+    base: ROOT,
+    dataRoot: ROOT,
+    manifestUrl: ROOT + 'manifest.json'
+  });
+  function splitUrl(s){
+    var q = s.indexOf('?');
+    return q >= 0 ? {path:s.slice(0,q), query:s.slice(q)} : {path:s, query:''};
+  }
+  function rewriteUrl(value){
+    if (!value) return value;
+    var s = String(value);
+    var parts = splitUrl(s), path = parts.path, query = parts.query;
+    if (/^(\.\/)?manifest\.json$/i.test(path) || /\/manifest\.json$/i.test(path)) return ROOT + 'manifest.json' + query;
+    var marker = 'thesaurus-json-shards/';
+    var idx = path.indexOf(marker);
+    if (idx >= 0) return ROOT + path.slice(idx + marker.length) + query;
+    return s;
+  }
+  if (window.fetch && !window.__videhaRootFetchGuard) {
+    window.__videhaRootFetchGuard = true;
+    var nativeFetch = window.fetch;
+    window.fetch = function(input, init){
+      try {
+        if (input && input.url) {
+          var fixed = rewriteUrl(input.url);
+          if (fixed !== input.url) input = new Request(fixed, input);
+        } else if (typeof input === 'string') {
+          input = rewriteUrl(input);
+        }
+      } catch(e) {}
+      return nativeFetch.call(this, input, init);
+    };
+  }
+  if (window.XMLHttpRequest && !window.__videhaRootXhrGuard) {
+    window.__videhaRootXhrGuard = true;
+    var nativeOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url){
+      try { url = rewriteUrl(url); } catch(e) {}
+      arguments[1] = url;
+      return nativeOpen.apply(this, arguments);
+    };
+  }
+})();
+</script>
 <script src="https://videha-ejournal.github.io/assets/js/videha-final-thesaurus-unified.js"></script>
 <!-- VIDEHA JSON-SHARD THESAURUS SEARCH WIDGET: end -->
 
