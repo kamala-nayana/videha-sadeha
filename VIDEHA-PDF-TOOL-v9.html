@@ -696,8 +696,12 @@
       </div>
       <div class="row">
         <label class="k" for="fmtI">Output format</label>
-        <select id="fmtI" style="min-width:150px"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option></select>
-        <span class="hint" style="margin:0">PNG lossless; JPG smaller.</span>
+        <select id="fmtI" style="min-width:170px">
+          <option value="image/jpeg">JPG</option>
+          <option value="image/png">PNG</option>
+          <option value="application/pdf">PDF</option>
+        </select>
+        <span class="hint" style="margin:0">JPG/PNG for split or merged image; PDF makes one PDF from selected images.</span>
       </div>
       <div class="row" id="qRowI">
         <label class="k" for="qI">JPG quality</label>
@@ -2548,8 +2552,22 @@ window.addEventListener('unhandledrejection', function(ev){
   setSliderVal('dpiS','dpiSval',' DPI'); setSliderVal('qS','qSval','%'); setSliderVal('dpiM','dpiMval',' DPI'); setSliderVal('qM','qMval','%'); setSliderVal('qI','qIval','%');
   function updateRowsByMode(selectId, map){ var sel=document.getElementById(selectId); if(!sel)return; function up(){ Object.keys(map).forEach(function(k){ var el=document.getElementById(map[k]); if(el) el.style.display = (sel.value===k) ? '' : 'none'; }); } sel.addEventListener('change',up); up(); }
   updateRowsByMode('modeS',{ranges:'rangeRowS',every:'everyRowS',size:'sizeRowS'});
-  function updateImageRows(){ var m=(document.getElementById('modeI')||{}).value; var tile=document.getElementById('tileRowI'), px=document.getElementById('pxRowI'), pdf=document.getElementById('pdfRowI'); if(tile) tile.style.display=m==='tiles'?'':'none'; if(px) px.style.display=m==='pixels'?'':'none'; if(pdf) pdf.style.display=m==='pdf'?'':'none'; }
-  var modeIel=document.getElementById('modeI'); if(modeIel){ modeIel.addEventListener('change',updateImageRows); updateImageRows(); }
+  function updateImageRows(){
+    var modeEl=document.getElementById('modeI'), fmtEl=document.getElementById('fmtI');
+    var m=(modeEl||{}).value, fmt=(fmtEl||{}).value;
+    if(fmt==='application/pdf' && modeEl && m!=='pdf'){ modeEl.value='pdf'; m='pdf'; }
+    if(m==='pdf' && fmtEl && fmt!=='application/pdf'){ fmtEl.value='application/pdf'; fmt='application/pdf'; }
+    if(m!=='pdf' && fmtEl && fmt==='application/pdf'){ fmtEl.value='image/jpeg'; fmt='image/jpeg'; }
+    var tile=document.getElementById('tileRowI'), px=document.getElementById('pxRowI'), pdf=document.getElementById('pdfRowI'), q=document.getElementById('qRowI');
+    if(tile) tile.style.display=m==='tiles'?'':'none';
+    if(px) px.style.display=m==='pixels'?'':'none';
+    if(pdf) pdf.style.display=m==='pdf'?'':'none';
+    if(q) q.style.display=m==='pdf'?'none':'';
+  }
+  var modeIel=document.getElementById('modeI'), fmtIel=document.getElementById('fmtI');
+  if(modeIel){ modeIel.addEventListener('change',updateImageRows); }
+  if(fmtIel){ fmtIel.addEventListener('change',updateImageRows); }
+  updateImageRows();
   function parseRangeGroups(str,total){ var s=(str||'').trim(); if(!s) s='1-'; return s.split(';').map(function(part){ return parsePages(part,total); }).filter(function(arr){ return arr&&arr.length; }); }
   function makeEveryGroups(total,n){ n=Math.max(1,parseInt(n,10)||1); var groups=[]; for(var p=1;p<=total;p+=n){ var g=[]; for(var q=p;q<Math.min(total+1,p+n);q++) g.push(q); groups.push(g); } return groups; }
   function makeApproxSizeGroups(total,fileSize,targetMB){ var target=Math.max(1,parseFloat(targetMB)||1)*1048576; var avg=Math.max(1,fileSize/Math.max(1,total)); var per=Math.max(1,Math.floor(target/avg)); return makeEveryGroups(total,per); }
@@ -2613,7 +2631,7 @@ window.addEventListener('unhandledrejection', function(ev){
   var imageQueue=[], imageOutputs=[];
   function refreshIButtons(){ var any=imageQueue.length>0, done=imageOutputs.length>0; document.getElementById('runI').disabled=!any; document.getElementById('clearI').disabled=!any; document.getElementById('zipI').disabled=!done; }
   function addImageFiles(files){ Array.from(files||[]).forEach(function(f){ if(!/^image\/(png|jpeg)$/.test(f.type))return; var item={file:f,name:f.name,icon:'🖼️',stat:fmtBytes(f.size)}; item._remove=function(it){ imageQueue=imageQueue.filter(function(x){return x!==it;}); if(it.el)it.el.remove(); refreshIButtons(); }; imageQueue.push(item); makeSimpleFileRow(document.getElementById('listI'),item,imageQueue.length); }); refreshIButtons(); }
-  async function runImageTool(){ imageOutputs.forEach(function(o){ if(o.url)URL.revokeObjectURL(o.url);}); imageOutputs=[]; var mode=document.getElementById('modeI').value, fmt=document.getElementById('fmtI').value, ext=fmt==='image/png'?'.png':'.jpg'; var q=(+document.getElementById('qI').value||88)/100;
+  async function runImageTool(){ imageOutputs.forEach(function(o){ if(o.url)URL.revokeObjectURL(o.url);}); imageOutputs=[]; var mode=document.getElementById('modeI').value, fmt=document.getElementById('fmtI').value; if(fmt==='application/pdf') mode='pdf'; var ext=fmt==='image/png'?'.png':'.jpg'; var q=(+document.getElementById('qI').value||88)/100;
     if(mode==='mergeV'||mode==='mergeH'){ var imgs=[]; for(var a=0;a<imageQueue.length;a++){ imageQueue[a].statEl.textContent='Loading…'; imgs.push(await loadImageElement(imageQueue[a].file)); imageQueue[a].barEl.style.width='100%'; }
       var totalW=mode==='mergeV'?Math.max.apply(null,imgs.map(function(im){return im.naturalWidth||im.width;})):imgs.reduce(function(s,im){return s+(im.naturalWidth||im.width);},0);
       var totalH=mode==='mergeV'?imgs.reduce(function(s,im){return s+(im.naturalHeight||im.height);},0):Math.max.apply(null,imgs.map(function(im){return im.naturalHeight||im.height;}));
