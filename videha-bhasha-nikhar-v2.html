@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="mai">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>विदेह भाषा-निखार — मैथिली प्रूफ-रीडिंग टूल v2</title>
+<style>
+:root{
+  --crimson:#8B1E2D; --deep:#5c1420; --gold:#C9A227; --gold-dark:#9c7d1a;
+  --cream:#FBF6EA; --paper:#FFFDF7; --ink:#2b1d16; --muted:#7a6a5c;
+  --ok:#2e6b34; --ok-bg:#e8f3e6;
+  --safe-bg:#fdeaea; --safe-bd:#c9737e;
+  --rev-bg:#eceaf9; --rev-bd:#8b7fc7;
+  --spc-bg:#eef3f5; --spc-bd:#7fa4b0;
+  --adv-bg:#fff3d6; --adv-bd:#b8860b; --warn:#8a5a00;
+  --lex-bg:#eaf4ee; --lex-bd:#5e9b77;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Bookman Old Style', Cambria, 'Noto Serif Devanagari', 'Kokila', serif;
+  background:var(--cream); color:var(--ink); font-size:17px; line-height:1.7;}
+header{background:linear-gradient(160deg, var(--deep), var(--crimson)); color:var(--cream);
+  padding:22px 26px 16px; position:relative; border-bottom:6px solid var(--gold);}
+header::after{content:""; position:absolute; left:0; right:0; bottom:-14px; height:8px;
+  background:repeating-linear-gradient(90deg, var(--gold) 0 10px, transparent 10px 14px, var(--crimson) 14px 24px, transparent 24px 28px); opacity:.85;}
+.brand{display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;}
+.brand .videha{font-size:2.3rem; font-weight:bold; color:var(--gold); text-shadow:0 1px 0 rgba(0,0,0,.35);}
+.brand h1{font-size:1.5rem; font-weight:normal;}
+.brand .sub{width:100%; font-size:.92rem; opacity:.9; font-style:italic;}
+nav.tabs{display:flex; gap:4px; padding:20px 26px 0;}
+nav.tabs button{font:inherit; font-size:1rem; border:1px solid var(--gold-dark); border-bottom:none;
+  background:#f3e9d2; color:var(--deep); padding:8px 22px; cursor:pointer; border-radius:8px 8px 0 0;}
+nav.tabs button.active{background:var(--paper); font-weight:bold; color:var(--crimson); box-shadow:0 -2px 0 var(--gold) inset;}
+main{background:var(--paper); border-top:1px solid var(--gold-dark); min-height:60vh; padding:22px 26px 40px;}
+section.tab{display:none;} section.tab.active{display:block;}
+h2{font-size:1.2rem; color:var(--crimson); margin:14px 0 8px; border-bottom:1px dotted var(--gold-dark); padding-bottom:4px;}
+h3{font-size:1.02rem; color:var(--deep); margin:12px 0 6px;}
+p.help{color:var(--muted); font-size:.92rem;}
+.dropzone{border:2px dashed var(--gold-dark); border-radius:10px; background:var(--cream);
+  padding:24px; text-align:center; cursor:pointer;}
+.dropzone.drag{background:#f6ecce;}
+.dropzone .big{font-size:1.12rem; color:var(--crimson); font-weight:bold;}
+.filemeta{margin:8px 0; font-size:.95rem; color:var(--ok); display:none;}
+textarea{width:100%; font:inherit; padding:12px; border:1px solid var(--gold-dark); border-radius:8px; background:var(--paper);}
+#pasteBox{min-height:150px; display:none;}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0;}
+button.btn{font:inherit; font-size:.94rem; cursor:pointer; border-radius:8px; padding:7px 15px;
+  border:1px solid var(--gold-dark); background:var(--cream); color:var(--deep);}
+button.btn:hover{background:#f2e7c9;}
+button.btn.primary{background:var(--crimson); color:var(--cream); border-color:var(--deep); font-weight:bold;}
+button.btn.primary:hover{background:var(--deep);}
+button.btn.gold{background:var(--gold); border-color:var(--gold-dark); color:var(--deep); font-weight:bold;}
+button.btn:disabled{opacity:.45; cursor:not-allowed;}
+label.opt{font-size:.9rem; display:inline-flex; gap:6px; align-items:center; cursor:pointer;}
+select, input[type=text], input[type=search]{font:inherit; font-size:.94rem; padding:6px 10px;
+  border:1px solid var(--gold-dark); border-radius:7px; background:var(--paper);}
+.review{display:grid; grid-template-columns:312px 1fr; gap:20px; margin-top:16px;}
+@media(max-width:940px){.review{grid-template-columns:1fr;} aside.panel{position:static; max-height:none;}}
+aside.panel{background:var(--cream); border:1px solid var(--gold-dark); border-radius:10px; padding:14px;
+  align-self:start; position:sticky; top:10px; max-height:92vh; overflow-y:auto;}
+aside.panel .stat{font-size:.98rem; margin-bottom:6px;}
+aside.panel .stat b{color:var(--crimson);}
+.kindrow{display:flex; justify-content:space-between; font-size:.88rem; padding:2px 4px;}
+.kindrow .sw{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+.rulecount{display:flex; justify-content:space-between; align-items:center; gap:6px;
+  font-size:.88rem; padding:3px 5px; border-bottom:1px dotted #d8c9a3;}
+.rulecount .w{color:var(--crimson); font-weight:bold;}
+.rulecount .r{color:var(--ok);}
+.rulecount button{font-size:.76rem; padding:2px 8px; border-radius:6px; border:1px solid var(--gold-dark); background:var(--paper); cursor:pointer;}
+.doc{max-width:960px; min-width:0;}
+.partlabel{font-size:.8rem; color:var(--muted); border-top:2px solid var(--gold); margin:18px 0 8px; padding-top:4px; letter-spacing:.05em;}
+.para{margin-bottom:12px; padding:2px 6px; border-radius:6px;}
+.para:hover{background:#fdf9ef;}
+.gapnote{color:var(--muted); font-size:.85rem; text-align:center; margin:6px 0;}
+.hit{display:inline; border-radius:5px; padding:1px 4px; margin:0 1px; border:1px solid; white-space:normal;}
+.hit.k-safe{background:var(--safe-bg); border-color:var(--safe-bd);}
+.hit.k-review{background:var(--rev-bg); border-color:var(--rev-bd);}
+.hit.k-spacing{background:var(--spc-bg); border-color:var(--spc-bd); font-size:.82em; color:var(--muted);}
+.hit.k-advice{background:var(--adv-bg); border-color:var(--adv-bd);}
+.hit.k-lexicon{background:var(--lex-bg); border-color:var(--lex-bd);}
+.hit .sug{color:var(--ok); font-weight:bold;}
+.hit .arrow{color:var(--muted); font-size:.85em; padding:0 2px;}
+.hit .act{font-size:.82em; cursor:pointer; border:none; background:none; padding:0 2px;}
+.hit .act.yes{color:var(--ok); font-weight:bold;}
+.hit .act.no{color:#a33;}
+.hit .act.ed{color:#666;}
+.hit .act.star{color:var(--gold-dark);}
+.hit .act:hover{transform:scale(1.3);}
+.hit.accepted{background:var(--ok-bg) !important; border-color:var(--ok) !important;}
+.hit.accepted .old{text-decoration:line-through; color:var(--muted); font-size:.85em;}
+.hit[data-note]:hover::after{content:attr(data-note); position:absolute; background:var(--deep); color:var(--cream);
+  padding:4px 10px; border-radius:6px; font-size:.8rem; max-width:340px; margin-left:6px; z-index:9;}
+table.rules{width:100%; border-collapse:collapse; font-size:.93rem; margin-top:10px;}
+table.rules th{background:var(--crimson); color:var(--cream); padding:6px 9px; text-align:left; font-weight:normal;}
+table.rules td{border-bottom:1px solid #e8dcbc; padding:4px 9px; vertical-align:top;}
+table.rules tr:nth-child(even) td{background:#fdf8ec;}
+.tag{font-size:.74rem; background:var(--cream); border:1px solid var(--gold-dark); border-radius:10px; padding:1px 8px; color:var(--deep); white-space:nowrap;}
+.tag.custom{background:var(--gold); font-weight:bold;}
+.tag.phrase{background:var(--rev-bg);}
+button.mini{font-size:.8rem; padding:2px 9px; border-radius:6px; cursor:pointer; border:1px solid var(--gold-dark); background:var(--paper);}
+.addform{background:var(--cream); border:1px solid var(--gold-dark); border-radius:10px; padding:14px; margin:12px 0;}
+.addform .row input[type=text]{flex:1; min-width:130px;}
+.small{font-size:.85rem; color:var(--muted);}
+.count-pill{background:var(--gold); color:var(--deep); border-radius:12px; padding:0 10px; font-size:.85rem; font-weight:bold;}
+.auditgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; margin-top:12px;}
+.audit-item{background:var(--cream); border:1px solid var(--gold-dark); border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between;}
+.audit-item b{color:var(--crimson);}
+.notice{background:var(--adv-bg); border:1px solid var(--adv-bd); border-radius:8px; padding:10px 14px; font-size:.9rem; margin-top:14px;}
+#toast{position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:var(--deep); color:var(--cream);
+  padding:10px 24px; border-radius:10px; border:1px solid var(--gold); display:none; z-index:99; font-size:.95rem; max-width:90vw;}
+footer{background:var(--deep); color:var(--cream); text-align:center; padding:16px 20px; border-top:5px solid var(--gold); font-size:.92rem;}
+footer a{color:var(--gold); text-decoration:none;}
+footer a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="videha">विदेह</span>
+    <h1>भाषा-निखार <span style="font-size:.75em; opacity:.85">· मैथिली प्रूफ-रीडिंग टूल v2</span></h1>
+    <span class="sub">DOCX (मुख्य पाठ + header/footer/footnote सहित) क समग्र भाषा-निखार · Safe/Review वर्गीकरण · शब्द-संग्रह आधारित वर्तनी-जाँच · पूर्णतः ऑफलाइन</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button id="tabBtn-review" class="active" onclick="showTab('review')">पाठ-समीक्षा</button>
+  <button id="tabBtn-rules" onclick="showTab('rules')">नियम-कोश <span class="count-pill" id="ruleTotal"></span></button>
+  <button id="tabBtn-audit" onclick="showTab('audit')">ऑडिट</button>
+  <button id="tabBtn-help" onclick="showTab('help')">सहायता</button>
+</nav>
+
+<main>
+<!-- ================= REVIEW ================= -->
+<section class="tab active" id="tab-review">
+  <div class="dropzone" id="dropzone">
+    <div class="big">एतय .docx फाइल छोड़ू अथवा क्लिक कऽ चुनू</div>
+    <p class="help">फाइल अहाँक कम्प्यूटरे मे रहत · मूल स्वरूपण (bold/italic) पूर्ण सुरक्षित · header, footer, footnote, endnote सेहो जाँचल जाएत</p>
+    <input type="file" id="fileInput" accept=".docx" style="display:none">
+  </div>
+  <div class="filemeta" id="fileMeta"></div>
+  <div class="row">
+    <button class="btn" id="pasteToggle">✎ अथवा पाठ साटू</button>
+    <label class="opt"><input type="checkbox" id="optSpacing" checked> विराम/स्पेस-जाँच</label>
+    <label class="opt"><input type="checkbox" id="optGender" checked> लिंग-क्रिया सतर्कता</label>
+    <label class="opt"><input type="checkbox" id="optLexicon" checked> शब्द-संग्रह वर्तनी-जाँच</label>
+    <label class="opt"><input type="checkbox" id="optDigits" onchange="if(this.checked)document.getElementById('optDigitsIntl').checked=false"> निर्यात मे अंक देवनागरी (123→१२३)</label>
+    <label class="opt"><input type="checkbox" id="optDigitsIntl" onchange="if(this.checked)document.getElementById('optDigits').checked=false"> निर्यात मे अंक अन्तर्राष्ट्रीय (१२३→123)</label>
+  </div>
+  <textarea id="pasteBox" placeholder="एतय मैथिली पाठ साटू…"></textarea>
+  <div class="row" id="pasteRow" style="display:none">
+    <button class="btn primary" onclick="analyzePaste()">पाठक समीक्षा करू</button>
+  </div>
+
+  <div class="review" id="reviewArea" style="display:none">
+    <aside class="panel">
+      <div class="stat">कुल सुझाव: <b id="statTotal">0</b> · स्वीकृत: <b id="statAcc" style="color:var(--ok)">0</b></div>
+      <div class="kindrow"><span><span class="sw" style="background:var(--safe-bg);border:1px solid var(--safe-bd)"></span>Safe</span><b id="cSafe">0</b></div>
+      <div class="kindrow"><span><span class="sw" style="background:var(--rev-bg);border:1px solid var(--rev-bd)"></span>Review</span><b id="cReview">0</b></div>
+      <div class="kindrow"><span><span class="sw" style="background:var(--lex-bg);border:1px solid var(--lex-bd)"></span>शब्द-संग्रह</span><b id="cLex">0</b></div>
+      <div class="kindrow"><span><span class="sw" style="background:var(--spc-bg);border:1px solid var(--spc-bd)"></span>Spacing</span><b id="cSpc">0</b></div>
+      <div class="kindrow"><span><span class="sw" style="background:var(--adv-bg);border:1px solid var(--adv-bd)"></span>सतर्कता</span><b id="cAdv">0</b></div>
+      <div class="row" style="margin:8px 0 4px">
+        <button class="btn gold" onclick="acceptSafe()">✓ Safe सभ स्वीकारू</button>
+      </div>
+      <div class="row" style="margin:0 0 8px">
+        <button class="btn" onclick="acceptAllFix()">✓ सभटा</button>
+        <button class="btn" onclick="resetDecisions()">↺ पुनः</button>
+        <button class="btn" onclick="rescan()">⟳ फेर जाँचू</button>
+      </div>
+      <div class="row">
+        <select id="kindFilter" onchange="renderDoc()">
+          <option value="all">देखाउ: सभ</option>
+          <option value="safe">केवल Safe</option>
+          <option value="review">केवल Review</option>
+          <option value="lexicon">केवल शब्द-संग्रह</option>
+          <option value="spacing">केवल Spacing</option>
+          <option value="advice">केवल सतर्कता</option>
+          <option value="accepted">केवल स्वीकृत</option>
+        </select>
+      </div>
+      <label class="opt" style="margin:4px 0"><input type="checkbox" id="onlyHitParas" onchange="renderDoc()"> केवल सुझाव-बला अनुच्छेद</label>
+
+      <h3>नियम-वार गणना</h3>
+      <div id="ruleCounts"></div>
+
+      <h3 style="margin-top:12px">झट नियम जोड़ू</h3>
+      <div class="row"><input type="text" id="qWrong" placeholder="गलत रूप" style="width:100%"></div>
+      <div class="row"><input type="text" id="qRight" placeholder="शुद्ध रूप" style="width:100%"></div>
+      <div class="row"><button class="btn primary" onclick="quickAdd()">+ जोड़ू आ फेर जाँचू</button></div>
+
+      <h3 style="margin-top:12px">सन्दर्भ शब्द-संग्रह</h3>
+      <p class="small" id="lexInfo">कोनो शब्द-संग्रह आयातित नहि</p>
+      <div class="row">
+        <button class="btn" onclick="document.getElementById('lexFile').click()">⬆ शब्द-सूची आयात (.txt/.json)</button>
+        <input type="file" id="lexFile" accept=".txt,.json" style="display:none" onchange="importLexicon(this.files[0])">
+        <button class="btn" onclick="clearLexicon()">✗ हटाउ</button>
+      </div>
+      <p class="small">शुद्ध मैथिली शब्दक सूची दियौ — ओहि सँ १-अक्षर-भेद बला अनोन शब्दक वर्तनी-सुझाव भेटत।</p>
+
+      <h3 style="margin-top:12px">निर्यात</h3>
+      <div class="row"><button class="btn primary" id="btnDocx" onclick="exportDocx()">⬇ संशोधित DOCX</button></div>
+      <div class="row"><button class="btn" onclick="exportTxt()">⬇ संशोधित पाठ (.txt)</button>
+        <button class="btn" onclick="exportReport()">⬇ प्रतिवेदन</button></div>
+    </aside>
+    <div class="doc">
+      <div id="docBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RULES ================= -->
+<section class="tab" id="tab-rules">
+  <h2>नियम-कोश</h2>
+  <p class="help"><b>Safe</b> नियम प्रायः निर्विवाद अछि आ "Safe सभ स्वीकारू" सँ एक्केबेर लागि सकैत अछि; <b>Review</b> नियम प्रसंग-सापेक्ष अछि — प्रत्येक स्थान देखि निर्णय लिअ। <b>अंश</b>-प्रकार नियम वाक्यांश ("होता है" → "होइत अछि") पर चलैत अछि। सभ परिवर्तन एहि ब्राउज़र मे सुरक्षित रहैत अछि।</p>
+
+  <div class="addform">
+    <h3>नव नियम / संशोधन</h3>
+    <div class="row">
+      <input type="text" id="nWrong" placeholder="गलत रूप">
+      <input type="text" id="nRight" placeholder="शुद्ध रूप">
+      <select id="nScope"><option value="auto">स्वतः</option><option value="word">पूरा शब्द</option><option value="phrase">वाक्यांश/अंश</option></select>
+      <select id="nSafe"><option value="0">Review</option><option value="1">Safe</option></select>
+      <input type="text" id="nNote" placeholder="टिप्पणी (वैकल्पिक)">
+      <button class="btn primary" onclick="addRuleFromForm()">+ सुरक्षित</button>
+    </div>
+    <h3 style="margin-top:10px">Bulk नियम (प्रति पंक्ति: गलत=सही अथवा गलत→सही)</h3>
+    <textarea id="bulkBox" style="min-height:90px" placeholder="किसी=कोनो&#10;होता है→होइत अछि"></textarea>
+    <div class="row"><button class="btn" onclick="addBulk()">+ Bulk जोड़ू</button>
+      <label class="opt"><input type="checkbox" id="bulkSafe"> Safe रूप मे जोड़ू</label></div>
+  </div>
+
+  <div class="row">
+    <input type="search" id="ruleSearch" placeholder="खोजू…" oninput="renderRules()">
+    <select id="ruleFilter" onchange="renderRules()">
+      <option value="all">सभ</option><option value="safe">Safe</option><option value="review">Review</option>
+      <option value="phrase">अंश</option><option value="custom">निज</option><option value="off">बन्द</option>
+    </select>
+    <button class="btn" onclick="exportRules()">⬇ JSON निर्यात</button>
+    <button class="btn" onclick="document.getElementById('rulesImport').click()">⬆ JSON आयात</button>
+    <input type="file" id="rulesImport" accept=".json" style="display:none" onchange="importRules(this.files[0])">
+    <button class="btn" onclick="restoreDefaults()">↺ मूल पर लौटू</button>
+  </div>
+
+  <table class="rules">
+    <thead><tr><th>चालू</th><th>गलत रूप</th><th>शुद्ध रूप</th><th>प्रकार</th><th>वर्ग</th><th>टिप्पणी</th><th></th></tr></thead>
+    <tbody id="rulesBody"></tbody>
+  </table>
+</section>
+
+<!-- ================= AUDIT ================= -->
+<section class="tab" id="tab-audit">
+  <h2>ऑडिट</h2>
+  <div id="auditBody"><p class="help">पहिने कोनो .docx खोलू।</p></div>
+  <div class="notice">नोट: Word कखनो-कखनो एक्के शब्दकेँ अनेक formatting runs मे बाँटि दैत अछि। ई टूल <b>अनुच्छेद-स्तर</b> पर जाँच करैत अछि, तेँ split-run शब्द (जेना "किस"+"ी") सेहो पकड़ल जाइत अछि आ प्रतिस्थापन काल स्वरूपण यथासम्भव सुरक्षित रहैत अछि।</div>
+</section>
+
+<!-- ================= HELP ================= -->
+<section class="tab" id="tab-help">
+  <h2>सहायता</h2>
+  <h3>कार्य-क्रम</h3>
+  <p>१. <b>पाठ-समीक्षा</b> मे .docx अपलोड करू — मुख्य पाठक संग header, footer, footnote, endnote सेहो जाँचल जाएत।<br>
+  २. रंग-संकेत: <span class="hit k-safe">Safe</span> निर्विवाद सुझाव, <span class="hit k-review">Review</span> प्रसंग-सापेक्ष, <span class="hit k-lexicon">शब्द-संग्रह</span> वर्तनी-सुझाव, <span class="hit k-spacing">Spacing</span> विराम-सफाई, <span class="hit k-advice">सतर्कता</span> लिंग-क्रिया संकेत।<br>
+  ३. प्रत्येक सुझाव पर: <b>✓</b> स्वीकारू · <b>✗</b> छोड़ू · <b>✎</b> प्रतिस्थापन बदलू · <b>★</b> स्थायी नियम बनाउ।<br>
+  ४. "Safe सभ स्वीकारू" सँ निर्विवाद सुझाव एक्केबेर स्वीकृत करू, फेर Review सभ देखू।<br>
+  ५. <b>⬇ संशोधित DOCX</b> — मूल स्वरूपण सुरक्षित रहत।</p>
+  <h3>स्थायी सुधार-शब्दकोश</h3>
+  <p>जँ कोनो शब्द बेर-बेर गलत भेटैत हो (यथा: किसी → कोनो), त झट-नियम, ★ बटन, अथवा नियम-कोश क Bulk सुविधा सँ स्थायी नियम बनाउ। नियम JSON रूप मे निर्यात/आयात कऽ दोसर कम्प्यूटर पर लऽ जा सकैत छी। पुरान संस्करण (v1) आ एहि टूलक पूर्व-रूपक JSON सेहो आयात होइत अछि।</p>
+  <h3>सन्दर्भ शब्द-संग्रह (वर्तनी-जाँच)</h3>
+  <p>शुद्ध मैथिली शब्दक सूची (.txt — प्रति पंक्ति एक शब्द, अथवा .json) आयात करू। तखन दस्तावेजक जे शब्द सूची मे नहि अछि आ सूचीक कोनो एक शब्द सँ मात्र एक अक्षर/मात्रा भिन्न अछि, तकर वर्तनी-सुझाव देखाओल जाएत। सूची IndexedDB मे स्थायी रूपेँ सुरक्षित रहैत अछि। मैथिली thesaurus वा कल्याणी-कोश सँ निकालल शब्द-सूची एतय उपयोगी हएत।</p>
+  <h3>गोपनीयता</h3>
+  <p>सम्पूर्ण प्रक्रिया अहाँक ब्राउज़र मे — कोनो सर्वर, कोनो CDN, कोनो बाहरी library नहि। इंटरनेट बिनु सेहो चलत।</p>
+</section>
+</main>
+
+<div id="toast"></div>
+
+<footer>
+  © गजेन्द्र ठाकुर · Gajendra Thakur, Editor, Videha — <a href="https://www.videha.co.in" target="_blank" rel="noopener">www.videha.co.in</a> · Maithili eJournal (ISSN 2229-547X) · विदेह भाषा-निखार v2.0
+</footer>
+
+<script>
+"use strict";
+/* =====================================================================
+   विदेह भाषा-निखार v2 — offline Maithili proofreading tool
+   © Gajendra Thakur, Editor, Videha  www.videha.co.in
+   ===================================================================== */
+
+const BUILTIN=[
+ {id:'b-kisi',from:'किसी',to:'कोनो',scope:'word',safe:true,on:true,note:'सामान्य हिन्दी रूप → मैथिली'},
+ {id:'b-lekin',from:'लेकिन',to:'मुदा',scope:'word',safe:true,on:true,note:'हिन्दी संयोजक → मैथिली'},
+ {id:'b-agar',from:'अगर',to:'जँ',scope:'word',safe:true,on:true,note:'शर्त-सूचक रूप'},
+ {id:'b-abhi',from:'अभी',to:'एखन',scope:'word',safe:true,on:true,note:'काल-सूचक रूप'},
+ {id:'b-yahan',from:'यहाँ',to:'एतय',scope:'word',safe:true,on:true,note:'स्थान-सूचक रूप'},
+ {id:'b-wahan',from:'वहाँ',to:'ओतय',scope:'word',safe:true,on:true,note:'स्थान-सूचक रूप'},
+ {id:'b-kabhi',from:'कभी',to:'कहियो',scope:'word',safe:true,on:true,note:'काल-सूचक रूप'},
+ {id:'b-isliye',from:'इसलिए',to:'तेँ',scope:'word',safe:false,on:true,note:'संदर्भ देखू'},
+ {id:'b-sirf',from:'सिर्फ',to:'मात्र',scope:'word',safe:false,on:true,note:'शैलीगत; संदर्भ देखू'},
+ {id:'b-nahin',from:'नहीं',to:'नहि',scope:'word',safe:false,on:true,note:'रजिस्टर/संदर्भ अनुसार “नै” सेहो सम्भव'},
+ {id:'b-hai',from:'है',to:'अछि',scope:'word',safe:false,on:true,note:'कर्ता अनुसार क्रिया बदलि सकैत अछि; जरूर देखू'},
+ {id:'b-hain',from:'हैं',to:'छथि',scope:'word',safe:false,on:true,note:'कर्ता अनुसार “अछि/छथि” भिन्न हो सकैत अछि'},
+ {id:'b-aur',from:'और',to:'आ',scope:'word',safe:true,on:true,note:'हिन्दी संयोजक → मैथिली'},
+ {id:'b-ya',from:'या',to:'वा',scope:'word',safe:true,on:true,note:'विकल्प-सूचक संयोजक'},
+ {id:'b-kuchh',from:'कुछ',to:'किछु',scope:'word',safe:true,on:true,note:'सामान्य हिन्दी रूप → मैथिली'},
+ {id:'b-kyon',from:'क्यों',to:'किएक',scope:'word',safe:true,on:true,note:'प्रश्नवाचक रूप'},
+ {id:'b-kahan',from:'कहाँ',to:'कतय',scope:'word',safe:true,on:true,note:'स्थानवाचक प्रश्न'},
+ {id:'b-kaise',from:'कैसे',to:'कोना',scope:'word',safe:true,on:true,note:'रीति-वाचक प्रश्न'},
+ {id:'b-ab',from:'अब',to:'आब',scope:'word',safe:true,on:true,note:'काल-सूचक रूप'},
+ {id:'b-tab',from:'तब',to:'तखन',scope:'word',safe:true,on:true,note:'काल-सूचक रूप'},
+ {id:'b-jab',from:'जब',to:'जखन',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक काल रूप'},
+ {id:'b-saath',from:'साथ',to:'संग',scope:'word',safe:true,on:true,note:'सामान्य हिन्दी रूप → मैथिली'},
+ {id:'b-liye',from:'लिए',to:'लेल',scope:'word',safe:true,on:true,note:'प्रयोजन-सूचक रूप'},
+ {id:'b-chahiye',from:'चाहिए',to:'चाही',scope:'word',safe:true,on:true,note:'सामान्य क्रिया-रूप'},
+ {id:'b-jo',from:'जो',to:'जे',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक सर्वनाम'},
+ {id:'b-yah',from:'यह',to:'ई',scope:'word',safe:true,on:true,note:'निकटवाचक सर्वनाम'},
+ {id:'b-vah',from:'वह',to:'ओ',scope:'word',safe:true,on:true,note:'दूरवाचक सर्वनाम'},
+ {id:'b-mein',from:'में',to:'मे',scope:'word',safe:true,on:true,note:'अधिकरण चिह्न'},
+ {id:'b-se',from:'से',to:'सँ',scope:'word',safe:true,on:true,note:'अपादान/करण; उपयोगकर्ता द्वारा स्थायी रूपमे स्वीकृत'},
+ {id:'b-ko',from:'को',to:'केँ',scope:'word',safe:false,on:true,note:'कर्म/सम्प्रदान; संदर्भ देखू'},
+ {id:'b-ne',from:'ने',to:'',scope:'word',safe:false,on:true,note:'हिन्दी कर्ता-चिह्न; मैथिली वाक्यमे प्रायः हटैत अछि, क्रिया सेहो देखू'},
+ {id:'b-bhi',from:'भी',to:'सेहो',scope:'word',safe:false,on:true,note:'समावेश-सूचक; शैली/संदर्भ देखू'},
+ {id:'b-hota-hai',from:'होता है',to:'होइत अछि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; पूरा वाक्य जाँचू'},
+ {id:'b-karta-hai',from:'करता है',to:'करैत अछि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; कर्ता अनुसार रूप जाँचू'},
+ {id:'b-kab',from:'कब',to:'कखन',scope:'word',safe:true,on:true,note:'कालवाचक प्रश्न'},
+ {id:'b-kidhar',from:'किधर',to:'कतय',scope:'word',safe:true,on:true,note:'स्थानवाचक प्रश्न'},
+ {id:'b-kitna',from:'कितना',to:'कतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-kitni',from:'कितनी',to:'कतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-kitne',from:'कितने',to:'कतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-itna',from:'इतना',to:'एतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-itni',from:'इतनी',to:'एतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-itne',from:'इतने',to:'एतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-utna',from:'उतना',to:'ओतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-utni',from:'उतनी',to:'ओतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-utne',from:'उतने',to:'ओतेक',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-jitna',from:'जितना',to:'जतेक',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक परिमाण'},
+ {id:'b-jitni',from:'जितनी',to:'जतेक',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक परिमाण'},
+ {id:'b-jitne',from:'जितने',to:'जतेक',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक परिमाण'},
+ {id:'b-aaj',from:'आज',to:'आइ',scope:'word',safe:true,on:true,note:'काल-सूचक रूप'},
+ {id:'b-kal',from:'कल',to:'काल्हि',scope:'word',safe:true,on:true,note:'काल-सूचक रूप; काल्हि अतीत/भविष्य दुनू संदर्भमे आबि सकैत अछि'},
+ {id:'b-phir',from:'फिर',to:'फेर',scope:'word',safe:true,on:true,note:'पुनरावृत्ति/क्रम'},
+ {id:'b-pahle',from:'पहले',to:'पहिने',scope:'word',safe:true,on:true,note:'काल/क्रम'},
+ {id:'b-andar',from:'अंदर',to:'भीतर',scope:'word',safe:true,on:true,note:'स्थान-सूचक'},
+ {id:'b-andar2',from:'अन्दर',to:'भीतर',scope:'word',safe:true,on:true,note:'स्थान-सूचक'},
+ {id:'b-tak',from:'तक',to:'धरि',scope:'word',safe:true,on:true,note:'सीमा-सूचक'},
+ {id:'b-kahin',from:'कहीं',to:'कतहु',scope:'word',safe:true,on:true,note:'अनिश्चित स्थान'},
+ {id:'b-hamesha',from:'हमेशा',to:'सदिखन',scope:'word',safe:true,on:true,note:'काल-सूचक'},
+ {id:'b-jyada',from:'ज्यादा',to:'बेसी',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-zyada',from:'ज़्यादा',to:'बेसी',scope:'word',safe:true,on:true,note:'परिमाण'},
+ {id:'b-thoda',from:'थोड़ा',to:'कनि',scope:'word',safe:true,on:true,note:'अल्प परिमाण'},
+ {id:'b-thodi',from:'थोड़ी',to:'कनि',scope:'word',safe:true,on:true,note:'अल्प परिमाण'},
+ {id:'b-thode',from:'थोड़े',to:'कनि',scope:'word',safe:true,on:true,note:'अल्प परिमाण'},
+ {id:'b-aage',from:'आगे',to:'आगाँ',scope:'word',safe:true,on:true,note:'दिशा/स्थान'},
+ {id:'b-peechhe',from:'पीछे',to:'पाछाँ',scope:'word',safe:true,on:true,note:'दिशा/स्थान'},
+ {id:'b-neeche',from:'नीचे',to:'नीचाँ',scope:'word',safe:true,on:true,note:'स्थान'},
+ {id:'b-saamne',from:'सामने',to:'सोझाँ',scope:'word',safe:true,on:true,note:'स्थान'},
+ {id:'b-taraf',from:'तरफ',to:'दिस',scope:'word',safe:false,on:true,note:'दिशा; संदर्भ देखू'},
+ {id:'b-paas',from:'पास',to:'लग',scope:'word',safe:false,on:true,note:'स्थान/निकटता; संदर्भ देखू'},
+ {id:'b-sab',from:'सब',to:'सभ',scope:'word',safe:true,on:true,note:'बहुवचन/समष्टि'},
+ {id:'b-sabhi',from:'सभी',to:'सभ',scope:'word',safe:true,on:true,note:'बहुवचन/समष्टि'},
+ {id:'b-apna',from:'अपना',to:'अपन',scope:'word',safe:true,on:true,note:'निजवाचक'},
+ {id:'b-apni',from:'अपनी',to:'अपन',scope:'word',safe:true,on:true,note:'निजवाचक'},
+ {id:'b-apne',from:'अपने',to:'अपन',scope:'word',safe:true,on:true,note:'निजवाचक'},
+ {id:'b-mera',from:'मेरा',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-meri',from:'मेरी',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-mere',from:'मेरे',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-hamara',from:'हमारा',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-hamari',from:'हमारी',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-hamare',from:'हमारे',to:'हमर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-aap',from:'आप',to:'अहाँ',scope:'word',safe:true,on:true,note:'सम्मानवाचक सर्वनाम'},
+ {id:'b-aapka',from:'आपका',to:'अहाँक',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-aapki',from:'आपकी',to:'अहाँक',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-aapke',from:'आपके',to:'अहाँक',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-uska',from:'उसका',to:'ओकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-uski',from:'उसकी',to:'ओकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-uske',from:'उसके',to:'ओकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-iska',from:'इसका',to:'एकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-iski',from:'इसकी',to:'एकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-iske',from:'इसके',to:'एकर',scope:'word',safe:true,on:true,note:'सम्बन्ध'},
+ {id:'b-is',from:'इस',to:'एहि',scope:'word',safe:true,on:true,note:'निकट संकेत'},
+ {id:'b-us',from:'उस',to:'ओहि',scope:'word',safe:true,on:true,note:'दूर संकेत'},
+ {id:'b-ismein',from:'इसमें',to:'एहिमे',scope:'word',safe:true,on:true,note:'निकट संकेत + अधिकरण'},
+ {id:'b-usmein',from:'उसमें',to:'ओहिमे',scope:'word',safe:true,on:true,note:'दूर संकेत + अधिकरण'},
+ {id:'b-isse',from:'इससे',to:'एहिसँ',scope:'word',safe:true,on:true,note:'निकट संकेत + करण/अपादान'},
+ {id:'b-usse',from:'उससे',to:'ओहिसँ',scope:'word',safe:true,on:true,note:'दूर संकेत + करण/अपादान'},
+ {id:'b-isko',from:'इसको',to:'एकरा',scope:'word',safe:true,on:true,note:'निकटवाचक कर्म रूप'},
+ {id:'b-ise',from:'इसे',to:'एकरा',scope:'word',safe:true,on:true,note:'निकटवाचक कर्म रूप'},
+ {id:'b-usko',from:'उसको',to:'ओकरा',scope:'word',safe:true,on:true,note:'दूरवाचक कर्म रूप'},
+ {id:'b-use',from:'उसे',to:'ओकरा',scope:'word',safe:true,on:true,note:'दूरवाचक कर्म रूप'},
+ {id:'b-unka',from:'उनका',to:'हुनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-unki',from:'उनकी',to:'हुनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-unke',from:'उनके',to:'हुनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-inka',from:'इनका',to:'हिनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-inki',from:'इनकी',to:'हिनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-inke',from:'इनके',to:'हिनकर',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-unhen',from:'उन्हें',to:'हुनका',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-inhen',from:'इन्हें',to:'हिनका',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान; संदर्भ देखू'},
+ {id:'b-mujhe',from:'मुझे',to:'हमरा',scope:'word',safe:false,on:true,note:'कारक अनुसार “हमरा/हमरा केँ” देखू'},
+ {id:'b-tum',from:'तुम',to:'अहाँ',scope:'word',safe:false,on:true,note:'सम्बोधन-स्तर अनुसार “तोँ/अहाँ” भिन्न हो सकैत अछि'},
+ {id:'b-kya',from:'क्या',to:'की',scope:'word',safe:false,on:true,note:'प्रश्नवाचक; “की/कि” संदर्भ देखू'},
+ {id:'b-kaun',from:'कौन',to:'के',scope:'word',safe:false,on:true,note:'प्रश्नवाचक सर्वनाम; संदर्भ देखू'},
+ {id:'b-kis',from:'किस',to:'कोन',scope:'word',safe:false,on:true,note:'विशेषणीय प्रश्न; विभक्ति अनुसार रूप बदलि सकैत अछि'},
+ {id:'b-kiska',from:'किसका',to:'ककर',scope:'word',safe:true,on:true,note:'प्रश्नवाचक सम्बन्ध'},
+ {id:'b-kiski',from:'किसकी',to:'ककर',scope:'word',safe:true,on:true,note:'प्रश्नवाचक सम्बन्ध'},
+ {id:'b-kiske',from:'किसके',to:'ककर',scope:'word',safe:true,on:true,note:'प्रश्नवाचक सम्बन्ध'},
+ {id:'b-kisko',from:'किसको',to:'ककरा',scope:'word',safe:false,on:true,note:'कारक रूप; संदर्भ देखू'},
+ {id:'b-kisse',from:'किससे',to:'ककरासँ',scope:'word',safe:false,on:true,note:'कारक रूप; संदर्भ देखू'},
+ {id:'b-koi',from:'कोई',to:'केओ',scope:'word',safe:false,on:true,note:'संज्ञासँ पहिने “कोनो” सेहो हो सकैत अछि'},
+ {id:'b-jahan',from:'जहाँ',to:'जतय',scope:'word',safe:true,on:true,note:'सम्बन्धवाचक स्थान'},
+ {id:'b-jaisa',from:'जैसा',to:'जेना',scope:'word',safe:false,on:true,note:'तुलना; संदर्भ देखू'},
+ {id:'b-jaisi',from:'जैसी',to:'जेना',scope:'word',safe:false,on:true,note:'तुलना; संदर्भ देखू'},
+ {id:'b-jaise',from:'जैसे',to:'जेना',scope:'word',safe:false,on:true,note:'तुलना/उदाहरण; संदर्भ देखू'},
+ {id:'b-vaisa',from:'वैसा',to:'तेना',scope:'word',safe:false,on:true,note:'तुलना; संदर्भ देखू'},
+ {id:'b-vaisi',from:'वैसी',to:'तेना',scope:'word',safe:false,on:true,note:'तुलना; संदर्भ देखू'},
+ {id:'b-vaise',from:'वैसे',to:'तेना',scope:'word',safe:false,on:true,note:'तुलना; संदर्भ देखू'},
+ {id:'b-aisa',from:'ऐसा',to:'एना',scope:'word',safe:false,on:true,note:'रीति/प्रकार; संदर्भ देखू'},
+ {id:'b-aisi',from:'ऐसी',to:'एना',scope:'word',safe:false,on:true,note:'रीति/प्रकार; संदर्भ देखू'},
+ {id:'b-aise',from:'ऐसे',to:'एना',scope:'word',safe:false,on:true,note:'रीति/प्रकार; संदर्भ देखू'},
+ {id:'b-dusra',from:'दूसरा',to:'दोसर',scope:'word',safe:true,on:true,note:'क्रम/विकल्प'},
+ {id:'b-dusri',from:'दूसरी',to:'दोसर',scope:'word',safe:true,on:true,note:'क्रम/विकल्प'},
+ {id:'b-dusre',from:'दूसरे',to:'दोसर',scope:'word',safe:true,on:true,note:'क्रम/विकल्प'},
+ {id:'b-pahla',from:'पहला',to:'पहिल',scope:'word',safe:true,on:true,note:'क्रम'},
+ {id:'b-pahli',from:'पहली',to:'पहिल',scope:'word',safe:true,on:true,note:'क्रम'},
+ {id:'b-dono',from:'दोनों',to:'दुनू',scope:'word',safe:true,on:true,note:'द्विवचन'},
+ {id:'b-teeno',from:'तीनों',to:'तीनू',scope:'word',safe:true,on:true,note:'समष्टि'},
+ {id:'b-har',from:'हर',to:'हरेक',scope:'word',safe:false,on:true,note:'वितरण; संदर्भ देखू'},
+ {id:'b-khud',from:'खुद',to:'स्वयं',scope:'word',safe:false,on:true,note:'शैलीगत निखार'},
+ {id:'b-achha',from:'अच्छा',to:'नीक',scope:'word',safe:true,on:true,note:'गुणवाचक'},
+ {id:'b-achhi',from:'अच्छी',to:'नीक',scope:'word',safe:true,on:true,note:'गुणवाचक'},
+ {id:'b-achhe',from:'अच्छे',to:'नीक',scope:'word',safe:true,on:true,note:'गुणवाचक'},
+ {id:'b-bada',from:'बड़ा',to:'पैघ',scope:'word',safe:true,on:true,note:'आकार/महत्त्व'},
+ {id:'b-badi',from:'बड़ी',to:'पैघ',scope:'word',safe:true,on:true,note:'आकार/महत्त्व'},
+ {id:'b-bade',from:'बड़े',to:'पैघ',scope:'word',safe:true,on:true,note:'आकार/महत्त्व'},
+ {id:'b-purana',from:'पुराना',to:'पुरान',scope:'word',safe:true,on:true,note:'काल/अवस्था'},
+ {id:'b-purani',from:'पुरानी',to:'पुरान',scope:'word',safe:true,on:true,note:'काल/अवस्था'},
+ {id:'b-purane',from:'पुराने',to:'पुरान',scope:'word',safe:true,on:true,note:'काल/अवस्था'},
+ {id:'b-khada',from:'खड़ा',to:'ठाढ़',scope:'word',safe:true,on:true,note:'स्थिति'},
+ {id:'b-khadi',from:'खड़ी',to:'ठाढ़',scope:'word',safe:true,on:true,note:'स्थिति'},
+ {id:'b-khade',from:'खड़े',to:'ठाढ़',scope:'word',safe:true,on:true,note:'स्थिति'},
+ {id:'b-hua',from:'हुआ',to:'भेल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-hui',from:'हुई',to:'भेल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-hue',from:'हुए',to:'भेल',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान अनुसार रूप देखू'},
+ {id:'b-gaya',from:'गया',to:'गेल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-gayi',from:'गई',to:'गेल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-gaye',from:'गए',to:'गेल',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान अनुसार “गेलाह” आदि सम्भव'},
+ {id:'b-aaya',from:'आया',to:'आयल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-aayi',from:'आई',to:'आयल',scope:'word',safe:false,on:true,note:'“आई” अन्य अर्थ/संक्षेप सेहो भऽ सकैत अछि'},
+ {id:'b-kiya',from:'किया',to:'कएल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-liya',from:'लिया',to:'लेल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-diya',from:'दिया',to:'देल',scope:'word',safe:false,on:true,note:'“दिया” संज्ञा (दीप) सेहो हो सकैत अछि'},
+ {id:'b-rakha',from:'रखा',to:'राखल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-kaha',from:'कहा',to:'कहल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-dekha',from:'देखा',to:'देखल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-mila',from:'मिला',to:'भेटल',scope:'word',safe:false,on:true,note:'“मिलल/भेटल” अर्थानुसार'},
+ {id:'b-nikla',from:'निकला',to:'निकलल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-pahuncha',from:'पहुंचा',to:'पहुँचल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-pahuncha2',from:'पहुँचा',to:'पहुँचल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-baitha',from:'बैठा',to:'बैसल',scope:'word',safe:true,on:true,note:'भूतकाल/स्थिति'},
+ {id:'b-laga',from:'लगा',to:'लगल',scope:'word',safe:false,on:true,note:'अर्थानुसार “लगल/लगाओल”'},
+ {id:'b-poochha',from:'पूछा',to:'पुछल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-socha',from:'सोचा',to:'सोचल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-likha',from:'लिखा',to:'लिखल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-padha',from:'पढ़ा',to:'पढ़ल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-suna',from:'सुना',to:'सुनल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-bola',from:'बोला',to:'बोलल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-khola',from:'खोला',to:'खोलल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-chala',from:'चला',to:'चलल',scope:'word',safe:false,on:true,note:'अर्थानुसार “चलल/चलाओल”'},
+ {id:'b-ruka',from:'रुका',to:'रुकल',scope:'word',safe:true,on:true,note:'भूतकाल'},
+ {id:'b-utha',from:'उठा',to:'उठल',scope:'word',safe:false,on:true,note:'अर्थानुसार “उठल/उठाओल”'},
+ {id:'b-raha',from:'रहा',to:'रहल',scope:'word',safe:false,on:true,note:'सहायक/मुख्य क्रिया संदर्भ देखू'},
+ {id:'b-rahi',from:'रही',to:'रहल',scope:'word',safe:false,on:true,note:'सहायक/मुख्य क्रिया संदर्भ देखू'},
+ {id:'b-rahe',from:'रहे',to:'रहल',scope:'word',safe:false,on:true,note:'सम्मान/वचन अनुसार रूप देखू'},
+ {id:'b-tha',from:'था',to:'छल',scope:'word',safe:false,on:true,note:'कर्ता/सम्मान अनुसार रूप देखू'},
+ {id:'b-thi',from:'थी',to:'छल',scope:'word',safe:false,on:true,note:'कर्ता/सम्मान अनुसार रूप देखू'},
+ {id:'b-the',from:'थे',to:'छल',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान अनुसार “छलाह” आदि सम्भव'},
+ {id:'b-hoga',from:'होगा',to:'होयत',scope:'word',safe:false,on:true,note:'कर्ता/सम्मान अनुसार रूप देखू'},
+ {id:'b-hogi',from:'होगी',to:'होयत',scope:'word',safe:false,on:true,note:'कर्ता/सम्मान अनुसार रूप देखू'},
+ {id:'b-honge',from:'होंगे',to:'होयत',scope:'word',safe:false,on:true,note:'बहुवचन/सम्मान अनुसार रूप देखू'},
+ {id:'b-karta',from:'करता',to:'करैत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-karti',from:'करती',to:'करैत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-karte',from:'करते',to:'करैत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-hota',from:'होता',to:'होइत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-hoti',from:'होती',to:'होइत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-hote',from:'होते',to:'होइत',scope:'word',safe:false,on:true,note:'क्रिया-विन्यास; पूरा वाक्य देखू'},
+ {id:'b-karen',from:'करें',to:'करू',scope:'word',safe:false,on:true,note:'आदर/विधिलिङ्ग संदर्भ देखू'},
+ {id:'b-kijiye',from:'कीजिए',to:'करू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-kariye',from:'करिए',to:'करू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-dekhiye',from:'देखिए',to:'देखू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-likhiye',from:'लिखिए',to:'लिखू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-padhiye',from:'पढ़िए',to:'पढ़ू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-jaiye',from:'जाइए',to:'जाउ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-aaiye',from:'आइए',to:'आउ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-dijiye',from:'दीजिए',to:'दिअ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-lijiye',from:'लीजिए',to:'लिअ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-rakhiye',from:'रखिए',to:'राखू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-suniye',from:'सुनिए',to:'सुनू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-samajhiye',from:'समझिए',to:'बुझू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-bataiye',from:'बताइए',to:'बताउ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-banaiye',from:'बनाइए',to:'बनाउ',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-kholiye',from:'खोलिए',to:'खोलू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-chaliye',from:'चलिए',to:'चलू',scope:'word',safe:true,on:true,note:'आदरवाचक आज्ञा'},
+ {id:'b-bhejiye',from:'भेजिए',to:'पठाउ',scope:'word',safe:false,on:true,note:'शैली/संदर्भ देखू'},
+ {id:'b-karna',from:'करना',to:'करब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया; विभक्ति अनुसार “करब/करबाक”'},
+ {id:'b-hona',from:'होना',to:'होयब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया; विभक्ति अनुसार “होयब/हेबाक”'},
+ {id:'b-dekhna',from:'देखना',to:'देखब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-likhna',from:'लिखना',to:'लिखब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-padhna',from:'पढ़ना',to:'पढ़ब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-kahna',from:'कहना',to:'कहब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-jana',from:'जाना',to:'जाएब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-aana',from:'आना',to:'आएब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-poochhna',from:'पूछना',to:'पुछब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-samajhna',from:'समझना',to:'बुझब',scope:'word',safe:false,on:true,note:'अनन्त क्रिया'},
+ {id:'b-karne',from:'करने',to:'करबाक',scope:'word',safe:false,on:true,note:'कारक/वाक्य-विन्यास अनुसार रूप देखू'},
+ {id:'b-hone',from:'होने',to:'हेबाक',scope:'word',safe:false,on:true,note:'कारक/वाक्य-विन्यास अनुसार रूप देखू'},
+ {id:'b-kabhi-kabhi',from:'कभी-कभी',to:'कहियो-कहियो',scope:'phrase',safe:true,on:true,note:'आवृत्ति'},
+ {id:'b-baar-baar',from:'बार-बार',to:'बेर-बेर',scope:'phrase',safe:true,on:true,note:'आवृत्ति'},
+ {id:'b-ek-baar',from:'एक बार',to:'एक बेर',scope:'phrase',safe:true,on:true,note:'आवृत्ति'},
+ {id:'b-do-baar',from:'दो बार',to:'दू बेर',scope:'phrase',safe:true,on:true,note:'आवृत्ति'},
+ {id:'b-koi-bhi',from:'कोई भी',to:'कोनो',scope:'phrase',safe:false,on:true,note:'संज्ञा/स्वतन्त्र प्रयोग अनुसार देखू'},
+ {id:'b-kuchh-bhi',from:'कुछ भी',to:'किछुओ',scope:'phrase',safe:true,on:true,note:'अनिश्चितता/समावेश'},
+ {id:'b-kahin-bhi',from:'कहीं भी',to:'कतहु',scope:'phrase',safe:true,on:true,note:'अनिश्चित स्थान'},
+ {id:'b-kabhi-nahin',from:'कभी नहीं',to:'कहियो नहि',scope:'phrase',safe:true,on:true,note:'निषेध'},
+ {id:'b-kahin-nahin',from:'कहीं नहीं',to:'कतहु नहि',scope:'phrase',safe:true,on:true,note:'निषेध'},
+ {id:'b-ab-tak',from:'अब तक',to:'आब धरि',scope:'phrase',safe:true,on:true,note:'काल-सीमा'},
+ {id:'b-aaj-tak',from:'आज तक',to:'आइ धरि',scope:'phrase',safe:true,on:true,note:'काल-सीमा'},
+ {id:'b-jab-tak',from:'जब तक',to:'जखन धरि',scope:'phrase',safe:true,on:true,note:'काल-सीमा'},
+ {id:'b-tab-tak',from:'तब तक',to:'तखन धरि',scope:'phrase',safe:true,on:true,note:'काल-सीमा'},
+ {id:'b-yahan-tak',from:'यहाँ तक',to:'एतय धरि',scope:'phrase',safe:true,on:true,note:'स्थान/सीमा'},
+ {id:'b-wahan-tak',from:'वहाँ तक',to:'ओतय धरि',scope:'phrase',safe:true,on:true,note:'स्थान/सीमा'},
+ {id:'b-ke-liye',from:'के लिए',to:'लेल',scope:'phrase',safe:false,on:true,note:'सम्बन्ध/सम्प्रदान अनुसार पूरा वाक्य देखू'},
+ {id:'b-kisi-ko',from:'किसी को',to:'ककरो',scope:'phrase',safe:false,on:true,note:'व्यक्ति/वस्तु संदर्भ देखू'},
+ {id:'b-kisi-se',from:'किसी से',to:'ककरोसँ',scope:'phrase',safe:false,on:true,note:'व्यक्ति/वस्तु संदर्भ देखू'},
+ {id:'b-kisi-ka',from:'किसी का',to:'ककरो',scope:'phrase',safe:false,on:true,note:'सम्बन्ध; संदर्भ देखू'},
+ {id:'b-kisi-ki',from:'किसी की',to:'ककरो',scope:'phrase',safe:false,on:true,note:'सम्बन्ध; संदर्भ देखू'},
+ {id:'b-kisi-ke',from:'किसी के',to:'ककरो',scope:'phrase',safe:false,on:true,note:'सम्बन्ध; संदर्भ देखू'},
+ {id:'b-kisi-ne',from:'किसी ने',to:'केओ',scope:'phrase',safe:false,on:true,note:'हिन्दी कर्ता-चिह्न हटैत अछि; पूरा वाक्य देखू'},
+ {id:'b-ho-gaya',from:'हो गया',to:'भऽ गेल',scope:'phrase',safe:true,on:true,note:'समाप्ति/परिणाम'},
+ {id:'b-ho-gayi',from:'हो गई',to:'भऽ गेल',scope:'phrase',safe:true,on:true,note:'समाप्ति/परिणाम'},
+ {id:'b-ho-gaye',from:'हो गए',to:'भऽ गेल',scope:'phrase',safe:false,on:true,note:'सम्मान/बहुवचन अनुसार रूप देखू'},
+ {id:'b-kiya-gaya',from:'किया गया',to:'कएल गेल',scope:'phrase',safe:true,on:true,note:'कर्मवाच्य भूतकाल'},
+ {id:'b-kaha-gaya',from:'कहा गया',to:'कहल गेल',scope:'phrase',safe:true,on:true,note:'कर्मवाच्य भूतकाल'},
+ {id:'b-diya-gaya',from:'दिया गया',to:'देल गेल',scope:'phrase',safe:true,on:true,note:'कर्मवाच्य भूतकाल'},
+ {id:'b-liya-gaya',from:'लिया गया',to:'लेल गेल',scope:'phrase',safe:true,on:true,note:'कर्मवाच्य भूतकाल'},
+ {id:'b-dekha-gaya',from:'देखा गया',to:'देखल गेल',scope:'phrase',safe:true,on:true,note:'कर्मवाच्य भूतकाल'},
+ {id:'b-kiya-jata-hai',from:'किया जाता है',to:'कएल जाइत अछि',scope:'phrase',safe:false,on:true,note:'कर्मवाच्य; कर्ता/वचन संदर्भ देखू'},
+ {id:'b-kaha-jata-hai',from:'कहा जाता है',to:'कहल जाइत अछि',scope:'phrase',safe:false,on:true,note:'कर्मवाच्य; संदर्भ देखू'},
+ {id:'b-kiya-gaya-hai',from:'किया गया है',to:'कएल गेल अछि',scope:'phrase',safe:false,on:true,note:'कर्मवाच्य; संदर्भ देखू'},
+ {id:'b-kar-rha-hai',from:'कर रहा है',to:'कऽ रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता अनुसार रूप देखू'},
+ {id:'b-kar-rhi-hai',from:'कर रही है',to:'कऽ रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता अनुसार रूप देखू'},
+ {id:'b-kar-rhe-hain',from:'कर रहे हैं',to:'कऽ रहल छथि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता/वचन देखू'},
+ {id:'b-ja-rha-hai',from:'जा रहा है',to:'जा रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता अनुसार रूप देखू'},
+ {id:'b-ja-rhi-hai',from:'जा रही है',to:'जा रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता अनुसार रूप देखू'},
+ {id:'b-ja-rhe-hain',from:'जा रहे हैं',to:'जा रहल छथि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता/वचन देखू'},
+ {id:'b-ho-rha-hai',from:'हो रहा है',to:'भऽ रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; संदर्भ देखू'},
+ {id:'b-ho-rhi-hai',from:'हो रही है',to:'भऽ रहल अछि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; संदर्भ देखू'},
+ {id:'b-ho-rhe-hain',from:'हो रहे हैं',to:'भऽ रहल छथि',scope:'phrase',safe:false,on:true,note:'प्रगतिशील क्रिया; कर्ता/वचन देखू'},
+ {id:'b-raha-hai',from:'रहा है',to:'रहल अछि',scope:'phrase',safe:false,on:true,note:'सहायक क्रिया; पूरा वाक्य देखू'},
+ {id:'b-rahi-hai',from:'रही है',to:'रहल अछि',scope:'phrase',safe:false,on:true,note:'सहायक क्रिया; पूरा वाक्य देखू'},
+ {id:'b-rahe-hain',from:'रहे हैं',to:'रहल छथि',scope:'phrase',safe:false,on:true,note:'सहायक क्रिया; कर्ता/वचन देखू'},
+ {id:'b-kar-sakta-hai',from:'कर सकता है',to:'कऽ सकैत अछि',scope:'phrase',safe:false,on:true,note:'समर्थता; कर्ता अनुसार रूप देखू'},
+ {id:'b-kar-sakte-hain',from:'कर सकते हैं',to:'कऽ सकैत छथि',scope:'phrase',safe:false,on:true,note:'समर्थता; कर्ता/वचन देखू'},
+ {id:'b-ho-sakta-hai',from:'हो सकता है',to:'भऽ सकैत अछि',scope:'phrase',safe:false,on:true,note:'सम्भावना; संदर्भ देखू'},
+ {id:'b-ho-sakte-hain',from:'हो सकते हैं',to:'भऽ सकैत छथि',scope:'phrase',safe:false,on:true,note:'सम्भावना; कर्ता/वचन देखू'},
+ {id:'b-karna-chahiye',from:'करना चाहिए',to:'करबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-hona-chahiye',from:'होना चाहिए',to:'हेबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-dekhna-chahiye',from:'देखना चाहिए',to:'देखबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-likhna-chahiye',from:'लिखना चाहिए',to:'लिखबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-kahna-chahiye',from:'कहना चाहिए',to:'कहबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-jana-chahiye',from:'जाना चाहिए',to:'जाएबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-aana-chahiye',from:'आना चाहिए',to:'आएबाक चाही',scope:'phrase',safe:true,on:true,note:'कर्तव्य/आवश्यकता'},
+ {id:'b-karti-hai',from:'करती है',to:'करैत अछि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; कर्ता अनुसार रूप जाँचू'},
+ {id:'b-karte-hain',from:'करते हैं',to:'करैत छथि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; कर्ता/वचन जाँचू'},
+ {id:'b-hoti-hai',from:'होती है',to:'होइत अछि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; कर्ता अनुसार रूप जाँचू'},
+ {id:'b-hote-hain',from:'होते हैं',to:'होइत छथि',scope:'phrase',safe:false,on:true,note:'हिन्दी क्रिया-विन्यास; कर्ता/वचन जाँचू'},
+ {id:'b-kyonki',from:'क्योंकि',to:'किएक तँ',scope:'phrase',safe:false,on:true,note:'कारण-सूचक; शैली/संदर्भ देखू'},
+ {id:'b-zaruri',from:'ज़रूरी',to:'जरूरी',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'b-zarur',from:'ज़रूर',to:'जरूर',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'b-khas',from:'ख़ास',to:'खास',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'b-file',from:'फ़ाइल',to:'फाइल',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'b-kanoon',from:'क़ानून',to:'कानून',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'b-karib',from:'क़रीब',to:'करीब',scope:'word',safe:false,on:true,note:'मैथिली देवनागरीमे नुक्ता-विहीन रूप; प्रकाशन-शैली अनुसार'},
+ {id:'m-0',from:'ये',to:'ई सभ',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-1',from:'वे',to:'ओ सभ',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-2',from:'मुझको',to:'हमरा',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-3',from:'मैं',to:'हम',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-4',from:'तुम्हारा',to:'अहाँक',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-5',from:'तुम्हारी',to:'अहाँक',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-6',from:'सारा',to:'सभटा',scope:'word',safe:true,on:true,note:'सर्वनाम'},
+ {id:'m-7',from:'परंतु',to:'मुदा',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-8',from:'परन्तु',to:'मुदा',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-9',from:'किंतु',to:'मुदा',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-10',from:'किन्तु',to:'मुदा',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-11',from:'मगर',to:'मुदा',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-12',from:'क्योंकि',to:'किएक तँ',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-13',from:'इसीलिए',to:'तैँ',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-14',from:'यदि',to:'जँ',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-15',from:'तो',to:'तँ',scope:'word',safe:false,on:true,note:'योजक/अव्यय'},
+ {id:'m-16',from:'मत',to:'जुनि',scope:'word',safe:false,on:true,note:'निषेधार्थ'},
+ {id:'m-17',from:'यहां',to:'एतय',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-18',from:'वहां',to:'ओतय',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-19',from:'कहां',to:'कतय',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-20',from:'कैसा',to:'केहन',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-21',from:'बहुत',to:'बड्ड',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-22',from:'बिना',to:'बिनु',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-23',from:'परसों',to:'परसू',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-24',from:'शायद',to:'भरिसक',scope:'word',safe:true,on:true,note:'योजक/अव्यय'},
+ {id:'m-25',from:'का',to:'क',scope:'word',safe:false,on:true,note:'सम्बन्ध-कारक; प्रसंग देखू'},
+ {id:'m-26',from:'की',to:'क',scope:'word',safe:false,on:true,note:'प्रसंग देखू; प्रश्नवाचक \'की\' छोड़ू'},
+ {id:'m-27',from:'हूँ',to:'छी',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-28',from:'हूं',to:'छी',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-29',from:'थीं',to:'छलीह',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-30',from:'गयी',to:'गेलि',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-31',from:'गये',to:'गेलाह',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-32',from:'आयी',to:'आएलि',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-33',from:'आए',to:'अएलाह',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-34',from:'आये',to:'अएलाह',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-35',from:'करेगा',to:'करत',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-36',from:'करेंगे',to:'करताह',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-37',from:'सकता',to:'सकैत',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-38',from:'सकती',to:'सकैत',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-39',from:'सकते',to:'सकैत',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-40',from:'मिली',to:'भेटलि',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-41',from:'मिले',to:'भेटल',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-42',from:'लिये',to:'लेल',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-43',from:'समझा',to:'बुझल',scope:'word',safe:false,on:true,note:'क्रिया'},
+ {id:'m-44',from:'पानी',to:'पानि',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-45',from:'आदमी',to:'लोक',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-46',from:'औरत',to:'स्त्रीगण',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-47',from:'लड़का',to:'बालक',scope:'word',safe:false,on:true,note:'बोलचाल मे \'छौंड़ा\''},
+ {id:'m-48',from:'लड़की',to:'बालिका',scope:'word',safe:false,on:true,note:'बोलचाल मे \'छौंड़ी\''},
+ {id:'m-49',from:'बच्चा',to:'नेना',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-50',from:'गाँव',to:'गाम',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-51',from:'गांव',to:'गाम',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-52',from:'रास्ता',to:'बाट',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-53',from:'दरवाजा',to:'केबाड़',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-54',from:'दरवाज़ा',to:'केबाड़',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-55',from:'सुबह',to:'भोर',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-56',from:'शाम',to:'साँझ',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-57',from:'रात',to:'राति',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-58',from:'आँख',to:'आँखि',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-59',from:'आंख',to:'आँखि',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-60',from:'माँ',to:'माए',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-61',from:'मां',to:'माए',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-62',from:'भाई',to:'भाए',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-63',from:'बहन',to:'बहिन',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-64',from:'पेड़',to:'गाछ',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-65',from:'पत्ता',to:'पात',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-66',from:'चावल',to:'चाउर',scope:'word',safe:true,on:true,note:'शब्द-चयन'},
+ {id:'m-67',from:'याद',to:'मोन',scope:'word',safe:false,on:true,note:'\'याद अछि\' → \'मोन अछि\''},
+ {id:'m-68',from:'मन',to:'मोन',scope:'word',safe:false,on:true,note:'शब्द-चयन'}
+];
+
+const FEM=["माए","माय","बहिन","बेटी","कन्या","स्त्री","स्त्रीगण","महिला","पत्नी","कनियाँ","कनिया","छौंड़ी","बालिका","दीदी","काकी","मौसी","भौजी","सासु","पुतोहु","बहु","नानी","दादी"];
+const MASC_V=["छल","गेल","भेल","आएल","अएल","रहल","बैसल","उठल","बाजल","कहल","देखल","सुनल","पड़ल","लागल"];
+
+/* ---------------- storage: rules ---------------- */
+const LS_RULES="vbn2_rules_v1";
+function clone(o){return JSON.parse(JSON.stringify(o));}
+let rules=[];
+function mergeBuiltin(existing){
+  const out=Array.isArray(existing)?existing:[];
+  const seen=new Set(out.map(r=>(r.from||"")+"\u0000"+(r.scope==="phrase"?"phrase":"word")));
+  for(const b of BUILTIN){const k=b.from+"\u0000"+b.scope; if(!seen.has(k)){out.push(clone(b)); seen.add(k);}}
+  return out;
+}
+function loadRules(){
+  try{const r=JSON.parse(localStorage.getItem(LS_RULES)||"null");
+      rules=mergeBuiltin(Array.isArray(r)&&r.length?r:[]);}
+  catch(e){rules=clone(BUILTIN);}
+  saveRules();
+}
+function saveRules(){ try{localStorage.setItem(LS_RULES,JSON.stringify(rules));}catch(e){} updateRuleTotal(); }
+function upsertRule(from,to,scope,safe,note){
+  const sc=scope==="phrase"?"phrase":"word";
+  const i=rules.findIndex(r=>r.from===from&&r.scope===sc);
+  if(i>=0){rules[i].to=to; rules[i].safe=!!safe; rules[i].on=true; if(note)rules[i].note=note;
+    if(!/^u-/.test(rules[i].id)) rules[i].note=(note||rules[i].note); }
+  else rules.push({id:"u-"+Date.now()+"-"+Math.random().toString(36).slice(2,6),from,to,scope:sc,safe:!!safe,on:true,note:note||"निज नियम"});
+  saveRules();
+}
+function autoScope(from){ return /\s/.test(from.trim())?"phrase":"word"; }
+
+/* ---------------- storage: lexicon (IndexedDB) ---------------- */
+const IDB_DB="videha-nikhar", IDB_STORE="kv", LEX_KEY="lexicon";
+let lexiconWords=new Set(), lexBuckets=new Map(), spellCache=new Map();
+function idb(){return new Promise((res,rej)=>{const q=indexedDB.open(IDB_DB,1);
+  q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains(IDB_STORE))q.result.createObjectStore(IDB_STORE);};
+  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);});}
+async function idbGet(k){try{const db=await idb();return await new Promise((res,rej)=>{const r=db.transaction(IDB_STORE).objectStore(IDB_STORE).get(k);r.onsuccess=()=>{res(r.result);db.close();};r.onerror=()=>{rej(r.error);db.close();};});}catch(e){return null;}}
+async function idbSet(k,v){try{const db=await idb();return await new Promise((res,rej)=>{const t=db.transaction(IDB_STORE,"readwrite");t.objectStore(IDB_STORE).put(v,k);t.oncomplete=()=>{res(true);db.close();};t.onerror=()=>{rej(t.error);db.close();};});}catch(e){return false;}}
+function normWord(w){ if(!w)return ""; w=String(w).normalize("NFC").trim();
+  w=w.replace(/^[^\p{L}\p{M}\p{N}]+|[^\p{L}\p{M}\p{N}]+$/gu,"");
+  if(/^[A-Za-z]/.test(w)) w=w.toLowerCase(); return w; }
+function cps(w){return [...w];}
+function scriptGrp(w){return /[\u0900-\u097F]/.test(w)?"d":"l";}
+function buildLexIndex(){
+  lexBuckets=new Map(); spellCache=new Map();
+  for(const w of lexiconWords){
+    const a=cps(w), k=scriptGrp(w)+"|"+(a[0]||"")+"|"+a.length;
+    if(!lexBuckets.has(k))lexBuckets.set(k,[]); lexBuckets.get(k).push(w);
+  }
+  document.getElementById("lexInfo").textContent = lexiconWords.size ?
+    "आयातित: "+lexiconWords.size.toLocaleString()+" शब्द (IndexedDB मे स्थायी)" : "कोनो शब्द-संग्रह आयातित नहि";
+}
+async function loadLexicon(){
+  const a=await idbGet(LEX_KEY);
+  lexiconWords=new Set(Array.isArray(a)?a:[]); buildLexIndex();
+}
+function damerauOne(a,b){
+  const A=cps(a),B=cps(b); if(a===b)return 0; const la=A.length,lb=B.length;
+  if(Math.abs(la-lb)>1)return 2;
+  if(la===lb){const dif=[];for(let i=0;i<la;i++)if(A[i]!==B[i]){dif.push(i);if(dif.length>2)return 2;}
+    if(dif.length===1)return 1;
+    if(dif.length===2&&dif[1]===dif[0]+1&&A[dif[0]]===B[dif[1]]&&A[dif[1]]===B[dif[0]])return 1; return 2;}
+  const S=la<lb?A:B,L=la<lb?B:A; let i=0,j=0,sk=0;
+  while(i<S.length&&j<L.length){if(S[i]===L[j]){i++;j++;}else{sk++;j++;if(sk>1)return 2;}} return 1;
+}
+function lexSuggest(tok){
+  if(!lexiconWords.size)return null;
+  const w=normWord(tok); if(!w||cps(w).length<3||lexiconWords.has(w))return null;
+  if(spellCache.has(w))return spellCache.get(w);
+  const a=cps(w),g=scriptGrp(w),f=a[0]; let m=[];
+  for(const len of [a.length-1,a.length,a.length+1]){
+    const arr=lexBuckets.get(g+"|"+f+"|"+len)||[];
+    for(const c of arr){if(damerauOne(w,c)===1){m.push(c); if(m.length>4)break;}}
+    if(m.length>4)break;
+  }
+  /* also allow different first char for same length (substitution at pos 0) */
+  if(m.length<=4){
+    for(const [k,arr] of lexBuckets){
+      const [kg,kf,kl]=k.split("|");
+      if(kg!==g||kf===f||+kl!==a.length)continue;
+      for(const c of arr){if(damerauOne(w,c)===1){m.push(c); if(m.length>4)break;}}
+      if(m.length>4)break;
+    }
+  }
+  const u=[...new Set(m)]; const ans=u.length===1?u[0]:null;
+  spellCache.set(w,ans); return ans;
+}
+async function importLexicon(file){
+  if(!file)return;
+  try{
+    const text=await file.text(); let words=new Set();
+    if(/\.json$/i.test(file.name)){
+      try{
+        const obj=JSON.parse(text); let visited=0;
+        const add=s=>{for(const t of String(s).split(/[^\p{L}\p{M}\p{N}]+/u)){const n=normWord(t); if(n&&cps(n).length>=2&&/\p{L}/u.test(n))words.add(n);}};
+        const walk=(v,d)=>{ if(v==null||d>6||visited++>800000)return;
+          if(typeof v==="string"){add(v);return;}
+          if(Array.isArray(v)){for(const x of v)walk(x,d+1);return;}
+          if(typeof v==="object"){for(const [k,val] of Object.entries(v)){if(/[\u0900-\u097F]/.test(k))add(k); walk(val,d+1);}}};
+        walk(obj,0);
+      }catch(e){ /* fall through to token scrape */ }
+    }
+    if(!words.size){
+      for(const t of text.split(/[^\p{L}\p{M}\p{N}]+/u)){const n=normWord(t); if(n&&cps(n).length>=2&&/\p{L}/u.test(n))words.add(n);}
+    }
+    if(!words.size){toast("कोनो शब्द नहि भेटल");return;}
+    for(const w of words)lexiconWords.add(w);
+    await idbSet(LEX_KEY,[...lexiconWords]); buildLexIndex();
+    toast(words.size.toLocaleString()+" शब्द आयातित · कुल "+lexiconWords.size.toLocaleString());
+    if(paras.length)rescan();
+  }catch(e){toast("आयात त्रुटि: "+e.message);}
+  document.getElementById("lexFile").value="";
+}
+async function clearLexicon(){
+  if(lexiconWords.size&&!confirm("आयातित शब्द-संग्रह ("+lexiconWords.size+" शब्द) हटाबी?"))return;
+  lexiconWords=new Set(); await idbSet(LEX_KEY,[]); buildLexIndex();
+  if(paras.length)rescan();
+}
+
+/* ---------------- generic UI ---------------- */
+function showTab(t){
+  document.querySelectorAll("section.tab").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+t).classList.add("active");
+  document.getElementById("tabBtn-"+t).classList.add("active");
+  if(t==="rules")renderRules(); if(t==="audit")renderAudit();
+}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.style.display="block";
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",2800);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function visWS(s){return s.replace(/ /g,"␣").replace(/\t/g,"⇥");}
+function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1200);}
+function nextPaint(){return new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));}
+
+/* =====================================================================
+   Native ZIP (no libraries)
+   ===================================================================== */
+async function inflateRaw(u8){const ds=new DecompressionStream("deflate-raw");
+  return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(ds)).arrayBuffer());}
+async function deflateRaw(u8){const cs=new CompressionStream("deflate-raw");
+  return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(cs)).arrayBuffer());}
+async function unzip(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf),dec=new TextDecoder(); let eocd=-1;
+  for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-22-65557);i--){
+    if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+  if(eocd<0)throw new Error("वैध .docx नहि");
+  const count=dv.getUint16(eocd+10,true),cdOff=dv.getUint32(eocd+16,true);
+  const files={}; let p=cdOff;
+  for(let i=0;i<count;i++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true);
+    const nlen=dv.getUint16(p+28,true),elen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true);
+    const lho=dv.getUint32(p+42,true);
+    const name=dec.decode(u8.subarray(p+46,p+46+nlen));
+    if(!name.endsWith("/")){
+      const ln=dv.getUint16(lho+26,true),le=dv.getUint16(lho+28,true);
+      const st=lho+30+ln+le, data=u8.slice(st,st+csize);
+      files[name]=method===0?data:await inflateRaw(data);
+    }
+    p+=46+nlen+elen+clen;
+  }
+  return files;
+}
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c;}return t;})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+async function zipWrite(files,onProgress){
+  const enc=new TextEncoder(); const parts=[],central=[]; let offset=0,n=0;
+  const names=Object.keys(files); let done=0;
+  for(const name of names){
+    const data=files[name], nm=enc.encode(name), crc=crc32(data);
+    const comp=await deflateRaw(data);
+    const useC=comp.length<data.length, payload=useC?comp:data, method=useC?8:0;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(8,method,true);lh.setUint16(12,0x2141,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,payload.length,true);lh.setUint32(22,data.length,true);
+    lh.setUint16(26,nm.length,true);
+    parts.push(new Uint8Array(lh.buffer),nm,payload);
+    const cd=new DataView(new ArrayBuffer(46));
+    cd.setUint32(0,0x02014b50,true);cd.setUint16(4,20,true);cd.setUint16(6,20,true);
+    cd.setUint16(10,method,true);cd.setUint16(14,0x2141,true);
+    cd.setUint32(16,crc,true);cd.setUint32(20,payload.length,true);cd.setUint32(24,data.length,true);
+    cd.setUint16(28,nm.length,true);cd.setUint32(42,offset,true);
+    central.push(new Uint8Array(cd.buffer),nm);
+    offset+=30+nm.length+payload.length; n++;
+    if(onProgress)onProgress(++done/names.length);
+  }
+  let cdSize=0; central.forEach(c=>cdSize+=c.length);
+  const eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true);eo.setUint16(8,n,true);eo.setUint16(10,n,true);
+  eo.setUint32(12,cdSize,true);eo.setUint32(16,offset,true);
+  return new Blob([...parts,...central,new Uint8Array(eo.buffer)],
+    {type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+}
+
+/* =====================================================================
+   Document state
+   ===================================================================== */
+const W_NS="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const PART_RE=/^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/;
+let mode=null, docFiles=null, partDocs=new Map(); /* name -> XML Document */
+let paras=[];   /* [{part, pEl?, nodes:[w:t], text}] global order: document.xml first */
+let matches=[]; let srcName="document";
+let auditInfo={parts:0,textNodes:0,paragraphs:0,chars:0};
+
+const dz=document.getElementById("dropzone"), fi=document.getElementById("fileInput");
+dz.addEventListener("click",()=>fi.click());
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag");});
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("drag");
+  if(e.dataTransfer.files[0])loadDocx(e.dataTransfer.files[0]);});
+fi.addEventListener("change",()=>{if(fi.files[0])loadDocx(fi.files[0]);});
+
+async function loadDocx(file){
+  try{
+    if(!/\.docx$/i.test(file.name)){toast("कृपया .docx फाइल चुनू");return;}
+    toast("फाइल खुजि रहल अछि…");
+    const buf=await file.arrayBuffer();
+    docFiles=await unzip(buf);
+    partDocs=new Map(); paras=[]; auditInfo={parts:0,textNodes:0,paragraphs:0,chars:0};
+    const names=Object.keys(docFiles).filter(n=>PART_RE.test(n))
+      .sort((a,b)=>(a==="word/document.xml"?-1:b==="word/document.xml"?1:a.localeCompare(b)));
+    if(!names.includes("word/document.xml"))throw new Error("word/document.xml नहि भेटल");
+    const parser=new DOMParser();
+    for(const name of names){
+      const xml=new TextDecoder().decode(docFiles[name]);
+      const doc=parser.parseFromString(xml,"application/xml");
+      if(doc.getElementsByTagName("parsererror").length)continue;
+      partDocs.set(name,doc); auditInfo.parts++;
+      const ps=doc.getElementsByTagNameNS(W_NS,"p");
+      for(const pEl of ps){
+        const wts=[...pEl.getElementsByTagNameNS(W_NS,"t")];
+        const text=wts.map(t=>t.textContent).join("");
+        paras.push({part:name,nodes:wts,text});
+        auditInfo.textNodes+=wts.length; auditInfo.chars+=text.length;
+      }
+      auditInfo.paragraphs+=ps.length;
+    }
+    mode="docx"; srcName=file.name.replace(/\.docx$/i,"");
+    const fm=document.getElementById("fileMeta");
+    fm.style.display="block";
+    fm.textContent="✓ "+file.name+" — "+auditInfo.parts+" भाग, "+auditInfo.paragraphs+" अनुच्छेद, "+
+      paras.reduce((a,p)=>a+(p.text.trim()?p.text.trim().split(/\s+/).length:0),0).toLocaleString()+" शब्द";
+    document.getElementById("onlyHitParas").checked = paras.length>300;
+    await analyze();
+  }catch(err){toast("फाइल पढ़बा मे त्रुटि: "+err.message);}
+}
+
+document.getElementById("pasteToggle").addEventListener("click",()=>{
+  const tb=document.getElementById("pasteBox"),pr=document.getElementById("pasteRow");
+  const show=tb.style.display!=="block";
+  tb.style.display=show?"block":"none"; pr.style.display=show?"flex":"none";
+});
+async function analyzePaste(){
+  const txt=document.getElementById("pasteBox").value;
+  if(!txt.trim()){toast("पहिने पाठ साटू");return;}
+  mode="text"; srcName="pasted-text"; docFiles=null; partDocs=new Map();
+  paras=txt.split(/\n/).map(t=>({part:"पाठ",nodes:null,text:t}));
+  auditInfo={parts:1,textNodes:0,paragraphs:paras.length,chars:txt.length};
+  document.getElementById("fileMeta").style.display="none";
+  document.getElementById("onlyHitParas").checked = paras.length>300;
+  await analyze();
+}
+
+/* =====================================================================
+   Scan engine (paragraph-level; handles split runs)
+   ===================================================================== */
+function isWordChar(ch){return !!ch&&/[\p{L}\p{M}\p{N}_]/u.test(ch);}
+const TOKEN_RE=/[\p{L}\p{M}\p{N}_]+/gu;
+
+function spacingCandidates(text){
+  const arr=[]; let m;
+  const pats=[
+    {re:/ {2,}/g,to:" ",label:"एकाधिक स्पेस"},
+    {re:/[ \t]+([।,;:!?])(?=[\p{L}\p{M}\p{N}])/gu,fn:mm=>mm[1]+" ",label:"विराम-चिह्नक आगू-पाछू स्पेस"},
+    {re:/[ \t]+([।,;:!?])/g,fn:mm=>mm[1],label:"विराम-चिह्न सँ पहिने स्पेस"},
+    {re:/।(?=[\p{L}\p{M}\p{N}])/gu,to:"। ",label:"दण्डक बाद स्पेस"}
+  ];
+  pats.forEach((p,pi)=>{p.re.lastIndex=0;
+    while((m=p.re.exec(text))){
+      arr.push({start:m.index,end:m.index+m[0].length,to:p.fn?p.fn(m):p.to,
+        kind:"spacing",ruleId:"spacing-"+pi,note:p.label});
+      if(m[0].length===0)p.re.lastIndex++;
+    }});
+  return arr;
+}
+function phraseOccurrences(text,from){
+  const out=[]; let pos=0;
+  while(true){const i=text.indexOf(from,pos); if(i<0)break; const e=i+from.length;
+    const okL=!isWordChar(from[0])||!isWordChar(text[i-1]);
+    const okR=!isWordChar(from[from.length-1])||!isWordChar(text[e]);
+    if(okL&&okR)out.push({start:i,end:e});
+    pos=i+1;}
+  return out;
+}
+async function analyze(){
+  matches=[]; let sid=0;
+  const doSpc=document.getElementById("optSpacing").checked;
+  const doGen=document.getElementById("optGender").checked;
+  const doLex=document.getElementById("optLexicon").checked&&lexiconWords.size>0;
+  const active=rules.filter(r=>r.on&&r.from);
+  const wordMap=new Map(), phraseRules=[];
+  for(const r of active){
+    if(r.scope!=="phrase"&&/^[\p{L}\p{M}\p{N}_]+$/u.test(r.from)){
+      if(!wordMap.has(r.from))wordMap.set(r.from,r);
+    }else phraseRules.push(r);
+  }
+  phraseRules.sort((a,b)=>b.from.length-a.from.length);
+  for(let pi=0;pi<paras.length;pi++){
+    const text=paras[pi].text; if(!text)continue;
+    const cand=[];
+    /* phrase rules first (longer wins in dedupe via sort) */
+    for(const r of phraseRules)for(const o of phraseOccurrences(text,r.from))
+      cand.push({start:o.start,end:o.end,to:r.to,kind:r.safe?"safe":"review",ruleId:r.id,note:r.note,ruleFrom:r.from});
+    /* word rules + lexicon */
+    TOKEN_RE.lastIndex=0; let m;
+    while((m=TOKEN_RE.exec(text))){
+      const tok=m[0], r=wordMap.get(tok);
+      if(r)cand.push({start:m.index,end:m.index+tok.length,to:r.to,kind:r.safe?"safe":"review",ruleId:r.id,note:r.note,ruleFrom:r.from});
+      else if(doLex){const lx=lexSuggest(tok);
+        if(lx&&lx!==tok)cand.push({start:m.index,end:m.index+tok.length,to:lx,kind:"lexicon",ruleId:"lex",
+          note:"शब्द-संग्रह सँ सम्भावित वर्तनी-सुझाव; प्रसंग देखू",ruleFrom:tok});}
+    }
+    if(doSpc)cand.push(...spacingCandidates(text));
+    if(doGen){
+      for(const fem of FEM){
+        let fpos=0;
+        while(true){const fidx=text.indexOf(fem,fpos); if(fidx<0)break; fpos=fidx+1;
+          if(isWordChar(text[fidx-1])||isWordChar(text[fidx+fem.length]))continue;
+          const zone=text.slice(fidx,Math.min(text.length,fidx+70));
+          for(const v of MASC_V){
+            const re=new RegExp("(?<![\\p{L}\\p{M}])"+v+"(?![\\p{L}\\p{M}])","u");
+            const vm=re.exec(zone.slice(fem.length));
+            if(vm){const s=fidx+fem.length+vm.index,e=s+v.length;
+              cand.push({start:s,end:e,to:v+"ि",kind:"advice",ruleId:"gender",
+                note:"स्त्रीलिंग कर्ता '"+fem+"' — क्रिया-रूप जाँचू ("+v+"→"+v+"ि?)",ruleFrom:"__gender__"});
+              break;}
+          }
+        }
+      }
+    }
+    /* dedupe overlaps: sort by start, longer first, safe first */
+    const kindRank={safe:0,review:1,lexicon:2,spacing:3,advice:4};
+    cand.sort((a,b)=>a.start-b.start||(b.end-b.start)-(a.end-a.start)||kindRank[a.kind]-kindRank[b.kind]);
+    let lastEnd=-1;
+    for(const c of cand){
+      if(c.start>=lastEnd){
+        matches.push({id:sid++,para:pi,start:c.start,end:c.end,from:text.slice(c.start,c.end),
+          to:c.to,kind:c.kind,ruleId:c.ruleId,note:c.note||"",ruleFrom:c.ruleFrom||"",status:"pending"});
+        lastEnd=c.end;
+      }
+    }
+    if(pi%600===599)await nextPaint();
+  }
+  document.getElementById("reviewArea").style.display="grid";
+  document.getElementById("btnDocx").disabled=(mode!=="docx");
+  renderDoc(); renderStats();
+  toast(matches.length.toLocaleString()+" सुझाव भेटल");
+}
+async function rescan(){ if(paras.length){ paras.forEach(p=>{ if(p.nodes)p.text=p.nodes.map(n=>n.textContent).join(""); }); await analyze(); } }
+
+/* =====================================================================
+   Render
+   ===================================================================== */
+function kindVisible(m){
+  const f=document.getElementById("kindFilter").value;
+  if(f==="all")return true;
+  if(f==="accepted")return m.status==="accepted";
+  return m.kind===f;
+}
+function hitHtml(m){
+  if(!kindVisible(m))return esc(m.from);
+  const note=m.note?(" data-note=\""+esc(m.note)+"\""):"";
+  const star="<button class='act star' onclick='rememberM("+m.id+")' title='स्थायी नियम बनाउ'>★</button>";
+  const edit="<button class='act ed' onclick='editM("+m.id+")' title='प्रतिस्थापन बदलू'>✎</button>";
+  if(m.status==="accepted")
+    return "<span class='hit accepted'><span class='old'>"+esc(visWS(m.from))+"</span> "+esc(visWS(m.to))+
+      " <button class='act no' onclick='undoM("+m.id+")' title='पूर्ववत'>↺</button></span>";
+  if(m.status==="ignored")return esc(m.from);
+  const disp=m.kind==="spacing"?("["+esc(m.note)+"]"):esc(m.from);
+  const sug=m.kind==="spacing"?"":"<span class='arrow'>→</span><span class='sug'>"+esc(visWS(m.to))+"</span>";
+  return "<span class='hit k-"+m.kind+"'"+note+">"+disp+sug+
+    "<button class='act yes' onclick='acceptM("+m.id+")' title='स्वीकारू'>✓</button>"+
+    "<button class='act no' onclick='ignoreM("+m.id+")' title='छोड़ू'>✗</button>"+
+    (m.kind==="spacing"?"":edit)+(m.kind==="lexicon"||m.kind==="advice"?star:"")+"</span>";
+}
+function partLabel(p){return p==="word/document.xml"?"":p.replace(/^word\//,"").replace(/\.xml$/,"");}
+function renderDoc(){
+  const body=document.getElementById("docBody");
+  const only=document.getElementById("onlyHitParas").checked;
+  const byPara={}; matches.forEach(m=>{(byPara[m.para]=byPara[m.para]||[]).push(m);});
+  let html="", lastPart=null, skipped=0;
+  const flushSkip=()=>{if(skipped){html+="<div class='gapnote'>… "+skipped+" अनुच्छेद बिनु सुझाव …</div>";skipped=0;}};
+  for(let pi=0;pi<paras.length;pi++){
+    const para=paras[pi], ms=(byPara[pi]||[]);
+    if(para.part!==lastPart){flushSkip();
+      const lbl=partLabel(para.part);
+      if(lbl)html+="<div class='partlabel'>— "+esc(lbl)+" —</div>";
+      lastPart=para.part;}
+    const visible=ms.some(kindVisible);
+    if(only&&!visible){skipped++;continue;}
+    flushSkip();
+    let cur=0,ph="";
+    for(const m of ms.slice().sort((a,b)=>a.start-b.start)){
+      ph+=esc(para.text.slice(cur,m.start))+hitHtml(m); cur=m.end;}
+    ph+=esc(para.text.slice(cur));
+    html+="<div class='para' id='para-"+pi+"'>"+(ph||"&nbsp;")+"</div>";
+  }
+  flushSkip();
+  body.innerHTML=html||"<p class='help'>कोनो पाठ नहि।</p>";
+}
+function renderParaOnly(pi){
+  const el=document.getElementById("para-"+pi); if(!el){renderDoc();return;}
+  const para=paras[pi];
+  const ms=matches.filter(m=>m.para===pi).sort((a,b)=>a.start-b.start);
+  let cur=0,ph="";
+  for(const m of ms){ph+=esc(para.text.slice(cur,m.start))+hitHtml(m);cur=m.end;}
+  ph+=esc(para.text.slice(cur));
+  el.innerHTML=ph||"&nbsp;";
+}
+function findM(id){return matches.find(m=>m.id===id);}
+function acceptM(id){const m=findM(id);if(m){m.status="accepted";renderParaOnly(m.para);renderStats();}}
+function ignoreM(id){const m=findM(id);if(m){m.status="ignored";renderParaOnly(m.para);renderStats();}}
+function undoM(id){const m=findM(id);if(m){m.status="pending";renderParaOnly(m.para);renderStats();}}
+function editM(id){const m=findM(id);if(!m)return;
+  const v=prompt("प्रतिस्थापन बदलू:",m.to);
+  if(v!==null&&v!==""){m.to=v;renderParaOnly(m.para);}}
+function rememberM(id){const m=findM(id);if(!m)return;
+  upsertRule(m.from,m.to,autoScope(m.from),false,"★ सँ बनल नियम");
+  toast("स्थायी नियम सुरक्षित: "+m.from+" → "+m.to+" (अगिला जाँच सँ लागू)");}
+function acceptSafe(){matches.forEach(m=>{if((m.kind==="safe"||m.kind==="spacing")&&m.status==="pending")m.status="accepted";});
+  renderDoc();renderStats();toast("Safe + Spacing सुझाव स्वीकृत");}
+function acceptAllFix(){matches.forEach(m=>{if(m.kind!=="advice"&&m.status==="pending")m.status="accepted";});
+  renderDoc();renderStats();toast("सभटा स्वीकृत (सतर्कता छोड़ि)");}
+function resetDecisions(){matches.forEach(m=>m.status="pending");renderDoc();renderStats();}
+function acceptRule(rid){matches.forEach(m=>{if(m.ruleId===rid&&m.status==="pending")m.status="accepted";});
+  renderDoc();renderStats();}
+
+function renderStats(){
+  const c=k=>matches.filter(m=>m.kind===k).length;
+  document.getElementById("statTotal").textContent=matches.length.toLocaleString();
+  document.getElementById("statAcc").textContent=matches.filter(m=>m.status==="accepted").length.toLocaleString();
+  document.getElementById("cSafe").textContent=c("safe");
+  document.getElementById("cReview").textContent=c("review");
+  document.getElementById("cLex").textContent=c("lexicon");
+  document.getElementById("cSpc").textContent=c("spacing");
+  document.getElementById("cAdv").textContent=c("advice");
+  const agg={};
+  matches.forEach(m=>{
+    if(m.kind==="advice"||m.kind==="spacing"||m.kind==="lexicon")return;
+    const k=m.ruleId;
+    agg[k]=agg[k]||{w:m.ruleFrom||m.from,r:m.to,n:0,p:0,rid:k};
+    agg[k].n++; if(m.status==="pending")agg[k].p++;});
+  const rows=Object.values(agg).sort((a,b)=>b.n-a.n).slice(0,60);
+  document.getElementById("ruleCounts").innerHTML=rows.map(r=>
+    "<div class='rulecount'><span><span class='w'>"+esc(r.w)+"</span> → <span class='r'>"+esc(r.r)+"</span> <small>("+r.n+")</small></span>"+
+    (r.p?"<button onclick=\"acceptRule('"+esc(r.rid)+"')\">सभ ✓</button>":"<span class='small'>✓</span>")+
+    "</div>").join("")||"<p class='small'>कोनो नियम-सुझाव नहि</p>";
+}
+
+function quickAdd(){
+  const w=document.getElementById("qWrong").value.trim(),r=document.getElementById("qRight").value.trim();
+  if(!w||!r){toast("दुनू खाना भरू");return;}
+  upsertRule(w,r,autoScope(w),false,"निज नियम");
+  document.getElementById("qWrong").value="";document.getElementById("qRight").value="";
+  rescan();toast("नियम जोड़ल: "+w+" → "+r);
+}
+
+/* =====================================================================
+   Export
+   ===================================================================== */
+function acceptedByPara(){
+  const by={};
+  matches.forEach(m=>{if(m.status==="accepted")(by[m.para]=by[m.para]||[]).push(m);});
+  Object.values(by).forEach(a=>a.sort((x,y)=>y.start-x.start));
+  return by;
+}
+function digitize(t){
+  if(document.getElementById("optDigits").checked)
+    return t.replace(/[0-9]/g,d=>"०१२३४५६७८९"[+d]);
+  if(document.getElementById("optDigitsIntl").checked)
+    return t.replace(/[०-९]/g,d=>String(d.charCodeAt(0)-0x0966));
+  return t;
+}
+function correctedParaText(pi,by){
+  let t=paras[pi].text;
+  for(const m of (by[pi]||[]))t=t.slice(0,m.start)+m.to+t.slice(m.end);
+  return digitize(t);
+}
+function exportTxt(){
+  const by=acceptedByPara();
+  const out=paras.map((p,i)=>correctedParaText(i,by)).join("\n");
+  download(new Blob([out],{type:"text/plain;charset=utf-8"}),srcName+"-nikhar.txt");
+}
+async function exportDocx(){
+  if(mode!=="docx"||!partDocs.size||!docFiles){toast("पहिने .docx अपलोड करू");return;}
+  const btn=document.getElementById("btnDocx"),old=btn.textContent;
+  try{
+    btn.disabled=true;btn.textContent="तैयार भऽ रहल…";await nextPaint();
+    const by=acceptedByPara();
+    for(let pi=0;pi<paras.length;pi++){
+      const para=paras[pi]; if(!para.nodes||!para.nodes.length)continue;
+      let texts=para.nodes.map(n=>n.textContent);
+      const edits=by[pi]||[];
+      for(const ed of edits){
+        let acc=0;const spans=texts.map(t=>{const s=[acc,acc+t.length];acc+=t.length;return s;});
+        let first=-1,last=-1;
+        for(let i=0;i<spans.length;i++){if(ed.start<spans[i][1]&&ed.end>spans[i][0]){if(first<0)first=i;last=i;}}
+        if(first<0)continue;
+        if(first===last){const s0=spans[first][0];
+          texts[first]=texts[first].slice(0,ed.start-s0)+ed.to+texts[first].slice(ed.end-s0);}
+        else{const s0=spans[first][0],sl=spans[last][0];
+          texts[first]=texts[first].slice(0,ed.start-s0)+ed.to+texts[last].slice(ed.end-sl);
+          for(let i=first+1;i<=last;i++)texts[i]="";}
+      }
+      texts=texts.map(digitize);
+      texts.forEach((t,i)=>{const el=para.nodes[i];el.textContent=t;
+        if(/^\s|\s$/.test(t))el.setAttribute("xml:space","preserve");});
+    }
+    const ser=new XMLSerializer(); const files={...docFiles};
+    for(const [name,doc] of partDocs)files[name]=new TextEncoder().encode(ser.serializeToString(doc));
+    const blob=await zipWrite(files,f=>{btn.textContent="DOCX… "+Math.round(f*100)+"%";});
+    download(blob,srcName+"-nikhar.docx");
+    toast("संशोधित DOCX तैयार — स्वरूपण सुरक्षित");
+    await rescan(); /* refresh working text; accepted edits are now applied */
+  }catch(e){toast("त्रुटि: "+e.message);}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
+function exportReport(){
+  const agg={};
+  matches.forEach(m=>{
+    const label=(m.kind==="advice"?"[सतर्कता] ":m.kind==="spacing"?"[Spacing] ":m.kind==="lexicon"?"[शब्द-संग्रह] ":"")+
+      (m.kind==="spacing"?m.note:(m.ruleFrom||m.from)+" → "+m.to);
+    agg[label]=agg[label]||{n:0,a:0};agg[label].n++;if(m.status==="accepted")agg[label].a++;});
+  const rows=Object.entries(agg).sort((a,b)=>b[1].n-a[1].n)
+    .map(([k,v])=>"<tr><td>"+esc(k)+"</td><td>"+v.n+"</td><td>"+v.a+"</td></tr>").join("");
+  const html="<!DOCTYPE html><html lang='mai'><head><meta charset='utf-8'><title>निखार-प्रतिवेदन — "+esc(srcName)+
+    "</title><style>body{font-family:'Bookman Old Style',Cambria,'Noto Serif Devanagari',serif;background:#FBF6EA;color:#2b1d16;padding:30px;}"+
+    "h1{color:#8B1E2D;border-bottom:3px solid #C9A227;padding-bottom:6px;}table{border-collapse:collapse;margin-top:16px;}"+
+    "th{background:#8B1E2D;color:#FBF6EA;padding:6px 14px;}td{border:1px solid #C9A227;padding:5px 14px;}"+
+    "footer{margin-top:30px;font-size:.9em;color:#7a6a5c;border-top:1px solid #C9A227;padding-top:8px;}</style></head><body>"+
+    "<h1>विदेह भाषा-निखार — प्रतिवेदन</h1><p>स्रोत: "+esc(srcName)+" · तिथि: "+new Date().toLocaleString()+
+    "</p><p>भाग: "+auditInfo.parts+" · अनुच्छेद: "+auditInfo.paragraphs+" · कुल सुझाव: "+matches.length+
+    " · स्वीकृत: "+matches.filter(m=>m.status==="accepted").length+"</p>"+
+    "<table><tr><th>नियम</th><th>भेटल</th><th>स्वीकृत</th></tr>"+rows+"</table>"+
+    "<footer>© Gajendra Thakur, Editor, Videha — www.videha.co.in · Maithili eJournal</footer></body></html>";
+  download(new Blob([html],{type:"text/html;charset=utf-8"}),srcName+"-nikhar-report.html");
+}
+
+/* =====================================================================
+   Rules tab
+   ===================================================================== */
+function updateRuleTotal(){document.getElementById("ruleTotal").textContent=rules.length;}
+function renderRules(){
+  const q=(document.getElementById("ruleSearch").value||"").trim();
+  const f=document.getElementById("ruleFilter").value;
+  const rows=rules.filter(r=>{
+    if(q&&!(r.from.includes(q)||r.to.includes(q)||(r.note||"").includes(q)))return false;
+    if(f==="safe"&&!r.safe)return false; if(f==="review"&&r.safe)return false;
+    if(f==="phrase"&&r.scope!=="phrase")return false;
+    if(f==="custom"&&!/^u-/.test(r.id))return false;
+    if(f==="off"&&r.on)return false;
+    return true;
+  }).sort((a,b)=>a.from.localeCompare(b.from,"hi"));
+  document.getElementById("rulesBody").innerHTML=rows.map(r=>{
+    const idx=rules.indexOf(r);
+    return "<tr><td><input type='checkbox' "+(r.on?"checked":"")+" onchange='ruleOn("+idx+",this.checked)'></td>"+
+      "<td><b style='color:var(--crimson)'>"+esc(r.from)+"</b></td>"+
+      "<td style='color:var(--ok)'>"+esc(r.to)+"</td>"+
+      "<td>"+(r.scope==="phrase"?"<span class='tag phrase'>अंश</span>":"<span class='tag'>शब्द</span>")+"</td>"+
+      "<td><span class='tag "+(/^u-/.test(r.id)?"custom":"")+"' style='cursor:pointer' title='Safe/Review बदलू' onclick='ruleSafe("+idx+")'>"+
+        (r.safe?"Safe":"Review")+"</span></td>"+
+      "<td class='small'>"+esc(r.note||"")+"</td>"+
+      "<td><button class='mini' onclick='editRule("+idx+")'>✎</button> "+
+      (/^u-/.test(r.id)?"<button class='mini' onclick='delRule("+idx+")'>✗</button>":"")+"</td></tr>";
+  }).join("");
+  updateRuleTotal();
+}
+function ruleOn(i,on){rules[i].on=on;saveRules();}
+function ruleSafe(i){rules[i].safe=!rules[i].safe;saveRules();renderRules();}
+function editRule(i){
+  const r=rules[i];
+  document.getElementById("nWrong").value=r.from;
+  document.getElementById("nRight").value=r.to;
+  document.getElementById("nScope").value=r.scope;
+  document.getElementById("nSafe").value=r.safe?"1":"0";
+  document.getElementById("nNote").value=r.note||"";
+  document.getElementById("nWrong").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function delRule(i){rules.splice(i,1);saveRules();renderRules();toast("नियम हटाओल गेल");}
+function addRuleFromForm(){
+  const w=document.getElementById("nWrong").value.trim(),r=document.getElementById("nRight").value.trim();
+  if(!w||!r){toast("गलत आ शुद्ध — दुनू रूप दिअ");return;}
+  let sc=document.getElementById("nScope").value; if(sc==="auto")sc=autoScope(w);
+  upsertRule(w,r,sc,document.getElementById("nSafe").value==="1",document.getElementById("nNote").value.trim());
+  ["nWrong","nRight","nNote"].forEach(id=>document.getElementById(id).value="");
+  renderRules();toast("नियम सुरक्षित: "+w+" → "+r);
+}
+function addBulk(){
+  const lines=document.getElementById("bulkBox").value.split(/\n/);
+  const safe=document.getElementById("bulkSafe").checked; let n=0;
+  for(const line of lines){
+    const m=line.split(/\s*(?:=|→|->)\s*/);
+    if(m.length>=2&&m[0].trim()&&m[1].trim()){
+      upsertRule(m[0].trim(),m[1].trim(),autoScope(m[0].trim()),safe,"Bulk नियम");n++;}
+  }
+  if(n){document.getElementById("bulkBox").value="";renderRules();toast(n+" नियम जोड़ल गेल");}
+  else toast("कोनो वैध पंक्ति नहि (गलत=सही)");
+}
+function exportRules(){
+  download(new Blob([JSON.stringify({tool:"videha-bhasha-nikhar",version:2,language:"Maithili",rules},null,1)],
+    {type:"application/json"}),"videha-nikhar-rules.json");
+}
+async function importRules(file){
+  if(!file)return;
+  try{
+    const obj=JSON.parse(await file.text());
+    let arr=null;
+    if(obj&&Array.isArray(obj.rules))arr=obj.rules;                 /* v2 + uploaded-tool format */
+    else if(Array.isArray(obj)&&obj.every(x=>x&&typeof x==="object"&&("from" in x)))arr=obj;
+    else if(obj&&Array.isArray(obj.custom)){                        /* v1 format */
+      arr=obj.custom.map(c=>({from:c.wrong,to:c.right,note:c.note}));}
+    if(!arr)throw new Error("अपरिचित JSON रूप");
+    let n=0;
+    for(const r of arr){
+      if(!r.from||!r.to)continue;
+      upsertRule(String(r.from),String(r.to),r.scope==="phrase"?"phrase":autoScope(String(r.from)),
+        !!r.safe,r.note||"Imported");n++;}
+    renderRules();toast(n+" नियम आयातित");
+    if(paras.length)rescan();
+  }catch(e){toast("आयात त्रुटि: "+e.message);}
+  document.getElementById("rulesImport").value="";
+}
+function restoreDefaults(){
+  if(!confirm("सभ निज नियम/परिवर्तन हटा कऽ मूल "+BUILTIN.length+" नियम पर लौटी?"))return;
+  rules=clone(BUILTIN);saveRules();renderRules();toast("मूल नियम पुनर्स्थापित");
+}
+
+/* =====================================================================
+   Audit tab
+   ===================================================================== */
+function renderAudit(){
+  const b=document.getElementById("auditBody");
+  if(!paras.length){b.innerHTML="<p class='help'>पहिने कोनो .docx खोलू।</p>";return;}
+  const c=k=>matches.filter(m=>m.kind===k).length;
+  const acc=matches.filter(m=>m.status==="accepted").length;
+  b.innerHTML="<div class='auditgrid'>"+
+    "<div class='audit-item'><span>DOCX text भाग जाँचल</span><b>"+auditInfo.parts+"</b></div>"+
+    "<div class='audit-item'><span>Word text runs</span><b>"+auditInfo.textNodes.toLocaleString()+"</b></div>"+
+    "<div class='audit-item'><span>अनुच्छेद</span><b>"+auditInfo.paragraphs.toLocaleString()+"</b></div>"+
+    "<div class='audit-item'><span>कुल अक्षर</span><b>"+auditInfo.chars.toLocaleString()+"</b></div>"+
+    "<div class='audit-item'><span>Safe सुझाव</span><b>"+c("safe")+"</b></div>"+
+    "<div class='audit-item'><span>Review सुझाव</span><b>"+c("review")+"</b></div>"+
+    "<div class='audit-item'><span>शब्द-संग्रह वर्तनी-सुझाव</span><b>"+c("lexicon")+"</b></div>"+
+    "<div class='audit-item'><span>Spacing सुझाव</span><b>"+c("spacing")+"</b></div>"+
+    "<div class='audit-item'><span>लिंग-क्रिया सतर्कता</span><b>"+c("advice")+"</b></div>"+
+    "<div class='audit-item'><span>आयातित शब्द-संग्रह</span><b>"+lexiconWords.size.toLocaleString()+"</b></div>"+
+    "<div class='audit-item'><span>निर्यात मे लागू होएत</span><b style='color:var(--ok)'>"+acc+"</b></div>"+
+    "<div class='audit-item'><span>सक्रिय नियम</span><b>"+rules.filter(r=>r.on).length+" / "+rules.length+"</b></div>"+
+    "</div>";
+}
+
+/* ---------------- init ---------------- */
+loadRules(); loadLexicon();
+</script>
+</body>
+</html>
