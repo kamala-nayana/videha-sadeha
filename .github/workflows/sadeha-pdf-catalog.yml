@@ -1,15 +1,23 @@
 name: Build Sadeha PDF Catalogue
+
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'data/sadeha-pdf-catalog.json'
+    paths:
+      - '**/*.pdf'
+      - 'tools/build-sadeha-pdf-catalog.py'
+      - '.github/workflows/sadeha-pdf-catalog.yml'
   workflow_dispatch:
+
 permissions:
   contents: write
+
+# All generated-asset writers in this repository share one queue.
+# cancel-in-progress:false serializes them instead of cancelling or racing pushes.
 concurrency:
-  group: sadeha-pdf-catalog-main
-  cancel-in-progress: true
+  group: videha-sadeha-generated-assets-main
+  cancel-in-progress: false
+
 jobs:
   build-catalog:
     runs-on: ubuntu-latest
@@ -17,11 +25,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Build lightweight Sadeha PDF catalogue
         run: python3 tools/build-sadeha-pdf-catalog.py . data/sadeha-pdf-catalog.json
-      - name: Commit catalogue
+
+      - name: Commit catalogue safely
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/sadeha-pdf-catalog.json
-          if git diff --cached --quiet; then echo "Sadeha PDF catalogue unchanged."; else git commit -m "Build Sadeha PDF catalogue" && git push; fi
+          if git diff --cached --quiet; then
+            echo "Sadeha PDF catalogue unchanged."
+            exit 0
+          fi
+          git commit -m "Build Sadeha PDF catalogue"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced with another writer; retrying ($attempt/3)..."
+            sleep $((attempt * 2))
+          done
+          echo "Unable to push generated catalogue after 3 attempts."
+          exit 1

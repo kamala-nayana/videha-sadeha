@@ -1,4 +1,5 @@
 name: Build Sadeha Federated Search
+
 on:
   push:
     branches: [main]
@@ -7,11 +8,14 @@ on:
       - 'panji-shards/**'
       - 'data/**'
   workflow_dispatch:
+
 permissions:
   contents: write
+
 concurrency:
-  group: videha-sadeha-general-pagefind-main
-  cancel-in-progress: true
+  group: videha-sadeha-generated-assets-main
+  cancel-in-progress: false
+
 jobs:
   build-search:
     runs-on: ubuntu-latest
@@ -29,19 +33,43 @@ jobs:
             /.github/
             /tools/
             /pagefind-videha-search/
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Prepare Sadeha corpus
         run: python3 tools/videha-sadeha-pagefind-prepare.py . _pagefind_videha_build
+
       - name: Build Pagefind
         run: npx -y pagefind@1.5.2 --site _pagefind_videha_build --output-subdir pagefind-videha-search --glob '**/*.{html,htm}'
-      - name: Install and commit bundle
+
+      - name: Install search bundle
         run: |
           rm -rf pagefind-videha-search
           cp -R _pagefind_videha_build/pagefind-videha-search ./pagefind-videha-search
           rm -rf _pagefind_videha_build
+
+      - name: Commit search index safely
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pagefind-videha-search
-          if git diff --cached --quiet; then echo "Sadeha search unchanged."; else git commit -m "Build Sadeha federated search index" && git push; fi
+          if git diff --cached --quiet; then
+            echo "Sadeha search unchanged."
+            exit 0
+          fi
+          git commit -m "Build Sadeha federated search index"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced with another writer; retrying ($attempt/3)..."
+            sleep $((attempt * 2))
+          done
+          echo "Unable to push generated search index after 3 attempts."
+          exit 1
