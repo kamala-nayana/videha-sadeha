@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/sadeha-scholar-analysis.yml'
+      - 'tools/fetch-authoritative-sadeha-html.py'
       - 'tools/sadeha-discovery-summary.py'
       - 'tools/classify-sadeha-volumes.py'
       - 'tools/build-sadeha-videha-map.py'
@@ -28,14 +29,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          filter: blob:none
           sparse-checkout: |
-            search-documents
             tools
             data
           sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Fetch authoritative Sadeha search HTML corpus
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/fetch-authoritative-sadeha-html.py
       - name: Build compact discovery summary
         run: python tools/sadeha-discovery-summary.py
       - name: Classify Sadeha volumes
