@@ -1,0 +1,45 @@
+name: Build Sadeha Scholar Source Documents
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sadeha-scholar-source.yml'
+      - 'tools/extract-sadeha-search-documents.py'
+      - 'Sadeha *.pdf'
+      - 'Sadeha * v*.pdf'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sadeha-scholar-source
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF text extractor
+        run: python -m pip install --disable-pip-version-check pymupdf
+      - name: Extract Sadeha issue text
+        run: python tools/extract-sadeha-search-documents.py
+      - name: Commit extracted Sadeha source layer
+        run: |
+          git config user.name "videha-sadeha-scholar-bot"
+          git config user.email "videha-sadeha-scholar-bot@users.noreply.github.com"
+          git add search-documents/ data/sadeha-text-extraction.json
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+          else
+            git commit -m "Update Sadeha searchable source documents [skip actions]"
+            git pull --rebase origin main
+            git push
+          fi
