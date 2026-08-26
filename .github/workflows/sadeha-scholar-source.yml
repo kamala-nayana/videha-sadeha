@@ -1,51 +1,40 @@
-name: Build Sadeha Scholar Source Documents
+name: Verify Sadeha Scholar Source Documents
 
+# The existing search-documents/sadeha-*.html files are the authoritative source
+# layer. PDF extraction is retained in tools only as a manual recovery option and
+# must never overwrite these HTML sources automatically.
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - '.github/workflows/sadeha-scholar-source.yml'
-      - 'tools/extract-sadeha-search-documents.py'
-      - 'tools/profile-sadeha-structure.py'
-      - 'tools/extract-sadeha-pdf-outlines.py'
-      - 'Sadeha *.pdf'
-      - 'Sadeha * v*.pdf'
+      - 'search-documents/sadeha-*.html'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: sadeha-scholar-source
+  group: sadeha-scholar-source-verify
   cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install PDF text extractor
-        run: python -m pip install --disable-pip-version-check pymupdf
-      - name: Extract Sadeha issue text
-        run: python tools/extract-sadeha-search-documents.py
-      - name: Profile Sadeha issue structure
-        run: python tools/profile-sadeha-structure.py
-      - name: Extract Sadeha PDF outlines
-        run: python tools/extract-sadeha-pdf-outlines.py
-      - name: Commit extracted Sadeha source layer
+          sparse-checkout: |
+            search-documents
+          sparse-checkout-cone-mode: true
+      - name: Verify authoritative Sadeha HTML corpus
+        shell: python
         run: |
-          git config user.name "videha-sadeha-scholar-bot"
-          git config user.email "videha-sadeha-scholar-bot@users.noreply.github.com"
-          git add search-documents/ data/sadeha-text-extraction.json data/sadeha-structure-profile.json data/sadeha-pdf-outlines.json
-          if git diff --cached --quiet; then
-            echo "No generated changes"
-          else
-            git commit -m "Update Sadeha searchable source documents [skip actions]"
-            git pull --rebase origin main
-            git push
-          fi
+          from pathlib import Path
+          files=sorted(Path('search-documents').glob('sadeha-*.html'))
+          print(f'Authoritative Sadeha search HTML files: {len(files)}')
+          for p in files:
+              print(p.as_posix(), p.stat().st_size)
+          if len(files) < 38:
+              raise SystemExit(f'Expected at least 38 authoritative Sadeha search HTML files; found {len(files)}')
