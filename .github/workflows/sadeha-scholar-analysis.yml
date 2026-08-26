@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/sadeha-scholar-analysis.yml'
       - 'tools/sadeha-discovery-summary.py'
+      - 'tools/classify-sadeha-volumes.py'
       - 'tools/build-sadeha-videha-map.py'
       - 'tools/build-sadeha-article-inventory.py'
       - 'tools/build-sadeha-scholar-records.py'
@@ -37,6 +38,8 @@ jobs:
           python-version: '3.12'
       - name: Build compact discovery summary
         run: python tools/sadeha-discovery-summary.py
+      - name: Classify Sadeha volumes
+        run: python tools/classify-sadeha-volumes.py
       - name: Map Sadeha reprints to original Videha articles
         run: python tools/build-sadeha-videha-map.py
       - name: Commit analysis data
