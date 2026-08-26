@@ -6,7 +6,6 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/sadeha-scholar-analysis.yml'
-      - 'tools/fetch-authoritative-sadeha-html.py'
       - 'tools/sadeha-discovery-summary.py'
       - 'tools/classify-sadeha-volumes.py'
       - 'tools/build-sadeha-videha-map.py'
@@ -30,17 +29,23 @@ jobs:
         with:
           fetch-depth: 1
           filter: blob:none
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
-            tools
-            data
-          sparse-checkout-cone-mode: true
+            /tools/
+            /data/
+            /search-documents/sadeha-*.html
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Fetch authoritative Sadeha search HTML corpus
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python tools/fetch-authoritative-sadeha-html.py
+      - name: Verify authoritative Sadeha HTML corpus
+        shell: python
+        run: |
+          from pathlib import Path
+          files=sorted(Path('search-documents').glob('sadeha-*.html'))
+          print(f'Authoritative Sadeha search HTML files checked out: {len(files)}')
+          for p in files: print(p.as_posix(), p.stat().st_size)
+          if len(files) < 38:
+              raise SystemExit(f'Expected at least 38 Sadeha search HTML files; found {len(files)}')
       - name: Build compact discovery summary
         run: python tools/sadeha-discovery-summary.py
       - name: Classify Sadeha volumes
