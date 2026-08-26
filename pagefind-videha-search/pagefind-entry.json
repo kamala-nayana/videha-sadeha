@@ -1,1 +1,1 @@
-{"version":"1.5.2","languages":{"mai":{"hash":"mai_1e3a77aa1c3","wasm":null,"page_count":99},"en":{"hash":"en_799e5a1d92","wasm":"en","page_count":2},"mai-deva":{"hash":"mai-deva_d741ad9055396b80","wasm":null,"page_count":37}},"include_characters":["_","‿","⁀","⁔","︳","︴","﹍","﹎","﹏","＿"]}
+{"version":"1.5.2","languages":{"en":{"hash":"en_799e5a1d92","wasm":"en","page_count":2},"mai-deva":{"hash":"mai-deva_c7e24da378f19f28","wasm":null,"page_count":37},"mai":{"hash":"mai_1e3a77aa1c3","wasm":null,"page_count":99}},"include_characters":["_","‿","⁀","⁔","︳","︴","﹍","﹎","﹏","＿"]}
