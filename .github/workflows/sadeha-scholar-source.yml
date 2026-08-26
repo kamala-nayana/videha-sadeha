@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/sadeha-scholar-source.yml'
       - 'tools/extract-sadeha-search-documents.py'
+      - 'tools/profile-sadeha-structure.py'
       - 'Sadeha *.pdf'
       - 'Sadeha * v*.pdf'
 
@@ -31,11 +32,13 @@ jobs:
         run: python -m pip install --disable-pip-version-check pymupdf
       - name: Extract Sadeha issue text
         run: python tools/extract-sadeha-search-documents.py
+      - name: Profile Sadeha issue structure
+        run: python tools/profile-sadeha-structure.py
       - name: Commit extracted Sadeha source layer
         run: |
           git config user.name "videha-sadeha-scholar-bot"
           git config user.email "videha-sadeha-scholar-bot@users.noreply.github.com"
-          git add search-documents/ data/sadeha-text-extraction.json
+          git add search-documents/ data/sadeha-text-extraction.json data/sadeha-structure-profile.json
           if git diff --cached --quiet; then
             echo "No generated changes"
           else
