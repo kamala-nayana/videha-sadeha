@@ -9,10 +9,10 @@ on:
       - 'tools/sadeha-discovery-summary.py'
       - 'tools/classify-sadeha-volumes.py'
       - 'tools/build-sadeha-videha-map.py'
+      - 'tools/build-sadeha-unique-audit.py'
       - 'tools/build-sadeha-article-inventory.py'
       - 'tools/build-sadeha-scholar-records.py'
       - 'search-documents/sadeha-*.html'
-      - 'data/sadeha-structure-profile.json'
 
 permissions:
   contents: write
@@ -42,6 +42,8 @@ jobs:
         run: python tools/classify-sadeha-volumes.py
       - name: Map Sadeha reprints to original Videha articles
         run: python tools/build-sadeha-videha-map.py
+      - name: Audit Sadeha-unique scholarly residuals
+        run: python tools/build-sadeha-unique-audit.py
       - name: Commit analysis data
         run: |
           git config user.name "videha-sadeha-scholar-bot"
