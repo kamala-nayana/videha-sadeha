@@ -1,8 +1,7 @@
 name: Verify Sadeha Scholar Source Documents
 
-# The existing search-documents/sadeha-*.html files are the authoritative source
-# layer. PDF extraction is retained in tools only as a manual recovery option and
-# must never overwrite these HTML sources automatically.
+# The existing search-documents/sadeha-*.html files are authoritative. This job
+# verifies them through the Contents API and never checks out or rewrites PDFs/HTML.
 on:
   workflow_dispatch:
   push:
@@ -22,19 +21,19 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          sparse-checkout: |
-            search-documents
-          sparse-checkout-cone-mode: true
       - name: Verify authoritative Sadeha HTML corpus
         shell: python
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
-          from pathlib import Path
-          files=sorted(Path('search-documents').glob('sadeha-*.html'))
+          import json,os,urllib.request
+          repo=os.environ['GITHUB_REPOSITORY']; ref=os.environ['GITHUB_SHA']; token=os.environ.get('GITHUB_TOKEN','')
+          url=f'https://api.github.com/repos/{repo}/contents/search-documents?ref={ref}'
+          req=urllib.request.Request(url,headers={'Accept':'application/vnd.github+json','User-Agent':'Videha-Sadeha-Scholar/1.0','Authorization':f'Bearer {token}'})
+          with urllib.request.urlopen(req,timeout=60) as r: items=json.load(r)
+          files=sorted([x for x in items if x.get('type')=='file' and x.get('name','').lower().startswith('sadeha-') and x.get('name','').lower().endswith('.html')],key=lambda x:x['name'].lower())
           print(f'Authoritative Sadeha search HTML files: {len(files)}')
-          for p in files:
-              print(p.as_posix(), p.stat().st_size)
-          if len(files) < 38:
-              raise SystemExit(f'Expected at least 38 authoritative Sadeha search HTML files; found {len(files)}')
+          for x in files: print(x['name'],x.get('size'),x.get('sha'))
+          if len(files)<38: raise SystemExit(f'Expected at least 38 authoritative Sadeha search HTML files; found {len(files)}')
