@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-"""Compatibility launcher and veraPDF raw-report normalizer for the hardened remediation engine."""
+"""Compatibility launcher and veraPDF raw-report normalizer for the hardened remediation engine.
+
+The launcher also applies two narrow runtime hardenings to the v2 engine before execution:
+transient GitHub/raw fetch retry/backoff, and explicit Noto routing for major Indic scripts.
+The PDF/UA acceptance checks themselves are unchanged.
+"""
 from __future__ import annotations
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -23,16 +30,60 @@ def option_value(name: str, default: str) -> str:
     return default
 
 
+def fetch_engine(url: str, attempts: int = 4) -> str:
+    last: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        request = urllib.request.Request(url, headers={"User-Agent": "Videha-PDF-UA-Remediator-Launcher/2.2"})
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response:
+                return response.read().decode("utf-8")
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+            last = exc
+            if attempt == attempts:
+                raise
+            time.sleep(min(15, 2 ** attempt))
+    raise RuntimeError(f"Unable to fetch remediation engine: {last}")
+
+
+def harden_engine(source: str) -> str:
+    """Apply deterministic, fail-loud hardenings without changing validation semantics."""
+    if "import time\n" not in source:
+        source = source.replace("import tempfile\n", "import tempfile\nimport time\n", 1)
+
+    old_get_json = '''def get_json(url: str) -> dict:\n    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT})\n    with urllib.request.urlopen(req, timeout=120) as response:\n        return json.load(response)\n'''
+    new_get_json = '''def get_json(url: str) -> dict:\n    last = None\n    for attempt in range(1, 5):\n        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT})\n        try:\n            with urllib.request.urlopen(req, timeout=120) as response:\n                return json.load(response)\n        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:\n            last = exc\n            if isinstance(exc, urllib.error.HTTPError) and exc.code not in {429, 500, 502, 503, 504}:\n                raise\n            if attempt == 4:\n                raise\n            time.sleep(min(15, 2 ** attempt))\n    raise RuntimeError(f"GitHub metadata fetch failed: {last}")\n'''
+    if old_get_json not in source:
+        raise RuntimeError("Expected get_json engine block not found; refusing an unverified runtime patch")
+    source = source.replace(old_get_json, new_get_json, 1)
+
+    old_download = '''    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})\n    with urllib.request.urlopen(req, timeout=300) as response, destination.open("wb") as output:\n        for chunk in iter(lambda: response.read(1024 * 1024), b""):\n            output.write(chunk)\n'''
+    new_download = '''    last = None\n    for attempt in range(1, 5):\n        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})\n        try:\n            with urllib.request.urlopen(req, timeout=300) as response, destination.open("wb") as output:\n                for chunk in iter(lambda: response.read(1024 * 1024), b""):\n                    output.write(chunk)\n            return\n        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:\n            last = exc\n            destination.unlink(missing_ok=True)\n            if isinstance(exc, urllib.error.HTTPError) and exc.code not in {429, 500, 502, 503, 504}:\n                raise\n            if attempt == 4:\n                raise\n            time.sleep(min(15, 2 ** attempt))\n    raise RuntimeError(f"Source PDF fetch failed: {last}")\n'''
+    if old_download not in source:
+        raise RuntimeError("Expected source-download engine block not found; refusing an unverified runtime patch")
+    source = source.replace(old_download, new_download, 1)
+
+    old_scripts = '''    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF:\n        return "deva"\n    if 0x11480 <= cp <= 0x114DF:\n        return "tirhuta"\n'''
+    new_scripts = '''    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF:\n        return "deva"\n    if 0x0980 <= cp <= 0x09FF:\n        return "beng"\n    if 0x0A00 <= cp <= 0x0A7F:\n        return "guru"\n    if 0x0A80 <= cp <= 0x0AFF:\n        return "gujr"\n    if 0x0B00 <= cp <= 0x0B7F:\n        return "orya"\n    if 0x0B80 <= cp <= 0x0BFF:\n        return "taml"\n    if 0x0C00 <= cp <= 0x0C7F:\n        return "telu"\n    if 0x0C80 <= cp <= 0x0CFF:\n        return "knda"\n    if 0x0D00 <= cp <= 0x0D7F:\n        return "mlym"\n    if 0x0D80 <= cp <= 0x0DFF:\n        return "sinh"\n    if 0x11480 <= cp <= 0x114DF:\n        return "tirhuta"\n'''
+    if old_scripts not in source:
+        raise RuntimeError("Expected script-routing engine block not found; refusing an unverified runtime patch")
+    source = source.replace(old_scripts, new_scripts, 1)
+
+    old_css = '''.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}\n'''
+    new_css = '''.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-beng {{ font-family:"Noto Sans Bengali","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-guru {{ font-family:"Noto Sans Gurmukhi","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-gujr {{ font-family:"Noto Sans Gujarati","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-orya {{ font-family:"Noto Sans Oriya","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-taml {{ font-family:"Noto Sans Tamil","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-telu {{ font-family:"Noto Sans Telugu","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-knda {{ font-family:"Noto Sans Kannada","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-mlym {{ font-family:"Noto Sans Malayalam","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-sinh {{ font-family:"Noto Sans Sinhala","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}\n'''
+    if old_css not in source:
+        raise RuntimeError("Expected font-routing engine block not found; refusing an unverified runtime patch")
+    return source.replace(old_css, new_css, 1)
+
+
 ref = option_value("--source-ref", os.environ.get("SOURCE_REF", "main"))
 out_dir = Path(option_value("--out", "remediated"))
 url = (
     f"https://raw.githubusercontent.com/{REPO}/"
     f"{urllib.parse.quote(ref, safe='')}/scripts/remediate_pdfs_v2.py"
 )
-request = urllib.request.Request(url, headers={"User-Agent": "Videha-PDF-UA-Remediator-Launcher/2.1"})
+engine = harden_engine(fetch_engine(url))
 with tempfile.NamedTemporaryFile(prefix="videha-remediator-v2-", suffix=".py", delete=False) as temp:
-    with urllib.request.urlopen(request, timeout=120) as response:
-        temp.write(response.read())
+    temp.write(engine.encode("utf-8"))
     target = temp.name
 
 result = subprocess.run([sys.executable, target, *sys.argv[1:]])
