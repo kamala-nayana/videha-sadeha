@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build text-first PDF/UA-1 accessibility derivatives for the Videha–Sadeha archive.
 
-Historical source PDFs are never modified. Embedded text is used where it is sufficiently
+Historical source PDFs are never modified. Embedded text is used where sufficiently
 readable; weak/missing text pages are OCRed with a Devanagari-capable Tesseract model.
-The resulting semantic HTML is rendered with WeasyPrint PDF/UA-1 and validated with
-pdfinfo, qpdf and, when requested, veraPDF's PDF/UA-1 profile.
+The semantic HTML derivative is rendered with WeasyPrint PDF/UA-1 and checked with
+pdfinfo, qpdf and veraPDF's PDF/UA-1 machine-validation profile.
 """
 from __future__ import annotations
 
@@ -14,12 +14,12 @@ import html
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 import unicodedata
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,30 +27,42 @@ from pathlib import Path
 REPO = "videha-ejournal/videha-sadeha"
 RELEASE_TAG = os.environ.get("ACCESSIBLE_PDF_RELEASE", "accessible-pdf-v1")
 EMBEDDED_TEXT_MIN = 80
+USER_AGENT = "Videha-PDF-UA-Remediator/1.0"
 
 
 def run(cmd: list[str], *, text: bool = True, check: bool = True, cwd: Path | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, text=text, capture_output=True, check=check, cwd=cwd)
 
 
-def pdf_paths() -> list[str]:
-    cp = run(["git", "ls-tree", "-r", "--name-only", "HEAD"])
-    return sorted(p for p in cp.stdout.splitlines() if p.lower().endswith(".pdf"))
+def get_json(url: str) -> dict:
+    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=120) as response:
+        return json.load(response)
 
 
-def git_blob_sha(path: str) -> str:
-    cp = run(["git", "ls-tree", "HEAD", "--", path])
-    if not cp.stdout.strip():
-        return ""
-    return cp.stdout.split()[2]
+def pdf_entries(ref: str) -> list[dict]:
+    ref_q = urllib.parse.quote(ref, safe="")
+    tree = get_json(f"https://api.github.com/repos/{REPO}/git/trees/{ref_q}?recursive=1")
+    if tree.get("truncated"):
+        raise RuntimeError("GitHub tree response was truncated; refusing an incomplete archive run")
+    entries = [
+        e for e in tree.get("tree", [])
+        if e.get("type") == "blob" and str(e.get("path", "")).lower().endswith(".pdf")
+    ]
+    return sorted(entries, key=lambda e: e["path"])
 
 
-def materialize(path: str, dest: Path) -> None:
-    # In a blobless checkout this fetches only the requested PDF blob.
-    with dest.open("wb") as fh:
-        proc = subprocess.run(["git", "show", f"HEAD:{path}"], stdout=fh, stderr=subprocess.PIPE)
-    if proc.returncode:
-        raise RuntimeError(proc.stderr.decode("utf-8", "replace"))
+def materialize(ref: str, path: str, dest: Path) -> None:
+    ref_q = urllib.parse.quote(ref, safe="")
+    path_q = urllib.parse.quote(path, safe="/")
+    url = f"https://raw.githubusercontent.com/{REPO}/{ref_q}/{path_q}"
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=300) as response, dest.open("wb") as fh:
+        while True:
+            chunk = response.read(1024 * 1024)
+            if not chunk:
+                break
+            fh.write(chunk)
 
 
 def sha256(path: Path) -> str:
@@ -134,9 +146,12 @@ def paragraph_html(text: str) -> str:
     return "\n".join(parts) or '<p class="unrecovered">No machine-readable text was recovered from this page.</p>'
 
 
-def build_html(source_path: str, source_sha: str, page_text: list[dict], created: str) -> str:
+def build_html(source_path: str, source_sha: str, page_text: list[dict], created: str, source_ref: str) -> str:
     title = f"{Path(source_path).stem} — accessible reading derivative"
-    source_url = "https://github.com/videha-ejournal/videha-sadeha/blob/main/" + urllib.parse.quote(source_path, safe="/")
+    source_url = (
+        f"https://github.com/{REPO}/blob/{urllib.parse.quote(source_ref, safe='')}/"
+        + urllib.parse.quote(source_path, safe="/")
+    )
     ocr_pages = [str(p["page"]) for p in page_text if p["method"] == "ocr"]
     unrecovered = [str(p["page"]) for p in page_text if not p["text"]]
     provenance = (
@@ -225,15 +240,8 @@ def verapdf_validation(pdf: Path, image: str) -> tuple[bool, dict]:
         return False, {"veraPDF": False, "veraPDFError": str(exc), "veraPDFOutputTail": raw[-1200:]}
 
 
-def source_blob_size(path: str) -> int | None:
-    cp = run(["git", "cat-file", "-s", f"HEAD:{path}"], check=False)
-    try:
-        return int((cp.stdout or "").strip()) if cp.returncode == 0 else None
-    except ValueError:
-        return None
-
-
-def process_one(source_path: str, out_dir: Path, vera_image: str | None) -> dict:
+def process_one(entry: dict, source_ref: str, out_dir: Path, vera_image: str | None) -> dict:
+    source_path = entry["path"]
     created = datetime.now(timezone.utc).isoformat()
     slug = safe_stem(source_path)
     source_pdf = out_dir / f".{slug}-source.pdf"
@@ -241,14 +249,16 @@ def process_one(source_path: str, out_dir: Path, vera_image: str | None) -> dict
     pdf_path = out_dir / f"{slug}-accessible.pdf"
     record = {
         "sourcePath": source_path,
-        "sourceGitBlobSha": git_blob_sha(source_path),
+        "sourceGitBlobSha": entry.get("sha", ""),
+        "sourceBytes": entry.get("size"),
         "sourceRepository": REPO,
+        "sourceRef": source_ref,
         "releaseTag": RELEASE_TAG,
         "generated": created,
         "status": "processing",
     }
     try:
-        materialize(source_path, source_pdf)
+        materialize(source_ref, source_path, source_pdf)
         record["sourceBytes"] = source_pdf.stat().st_size
         record["sourceSha256"] = sha256(source_pdf)
         pages = pages_in(source_pdf)
@@ -272,7 +282,7 @@ def process_one(source_path: str, out_dir: Path, vera_image: str | None) -> dict
             "embedded-text" if not record["ocrPages"] else
             "ocr" if len(record["ocrPages"]) == pages else "mixed"
         )
-        html_text = build_html(source_path, record["sourceSha256"], page_text, created)
+        html_text = build_html(source_path, record["sourceSha256"], page_text, created, source_ref)
         html_path.write_text(html_text, encoding="utf-8")
         render_pdf(html_path, pdf_path)
         basic_ok, validation = basic_validation(pdf_path)
@@ -289,7 +299,6 @@ def process_one(source_path: str, out_dir: Path, vera_image: str | None) -> dict
         record["accessiblePdfUrl"] = (
             f"https://github.com/{REPO}/releases/download/{RELEASE_TAG}/" + urllib.parse.quote(pdf_path.name)
         )
-        record["accessibleHtmlArtifact"] = html_path.name
         record["outputBytes"] = pdf_path.stat().st_size
         record["outputSha256"] = sha256(pdf_path)
         record["editorialTextVerification"] = "not-reviewed"
@@ -304,6 +313,7 @@ def process_one(source_path: str, out_dir: Path, vera_image: str | None) -> dict
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--source-ref", default=os.environ.get("SOURCE_REF", "main"))
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--limit", type=int, default=0)
@@ -312,26 +322,27 @@ def main() -> int:
     parser.add_argument("--require-pdfua", action="store_true")
     args = parser.parse_args()
 
-    all_paths = pdf_paths()
-    selected = [p for i, p in enumerate(all_paths) if i % args.shard_count == args.shard_index]
+    all_entries = pdf_entries(args.source_ref)
+    selected = [e for i, e in enumerate(all_entries) if i % args.shard_count == args.shard_index]
     if args.limit:
         selected = selected[: args.limit]
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
-    print(f"Archive PDFs: {len(all_paths)}; shard {args.shard_index}/{args.shard_count}: {len(selected)}")
-    for number, source_path in enumerate(selected, 1):
-        print(f"[{number}/{len(selected)}] {source_path}", flush=True)
-        rec = process_one(source_path, out_dir, args.verapdf_image or None)
+    print(f"Archive PDFs: {len(all_entries)}; shard {args.shard_index}/{args.shard_count}: {len(selected)}")
+    for number, entry in enumerate(selected, 1):
+        print(f"[{number}/{len(selected)}] {entry['path']}", flush=True)
+        rec = process_one(entry, args.source_ref, out_dir, args.verapdf_image or None)
         records.append(rec)
         print(f"  -> {rec['status']}", flush=True)
 
     manifest = {
         "schemaVersion": 1,
         "repository": REPO,
+        "sourceRef": args.source_ref,
         "releaseTag": RELEASE_TAG,
         "generated": datetime.now(timezone.utc).isoformat(),
-        "sourcePdfCount": len(all_paths),
+        "sourcePdfCount": len(all_entries),
         "shardIndex": args.shard_index,
         "shardCount": args.shard_count,
         "records": records,
