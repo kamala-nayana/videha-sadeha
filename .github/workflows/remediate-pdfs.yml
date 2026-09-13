@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - scripts/remediate_pdfs.py
-      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   push:
@@ -13,7 +12,6 @@ on:
     paths:
       - "**.pdf"
       - scripts/remediate_pdfs.py
-      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   workflow_dispatch:
@@ -24,18 +22,16 @@ permissions:
 env:
   ACCESSIBLE_PDF_RELEASE: accessible-pdf-v1
   VERAPDF_IMAGE: ghcr.io/verapdf/cli:latest
-  GH_REPO: ${{ github.repository }}
+  SOURCE_REF: ${{ github.ref_name }}
 
 jobs:
   smoke:
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name != 'main')
+    if: github.ref_name != 'main'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Fetch remediation script only
         shell: bash
-        env:
-          SOURCE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
           mkdir -p scripts
           curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$SOURCE_REF/scripts/remediate_pdfs.py" -o scripts/remediate_pdfs.py
@@ -51,8 +47,6 @@ jobs:
           python -m pip install --disable-pip-version-check 'weasyprint==70.0'
           docker pull "$VERAPDF_IMAGE"
       - name: Remediate and validate one real archive PDF
-        env:
-          SOURCE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
           python scripts/remediate_pdfs.py \
             --source-ref "$SOURCE_REF" \
@@ -73,38 +67,44 @@ jobs:
           retention-days: 7
 
   prepare-release:
-    if: github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.ref_name == 'main'
     runs-on: ubuntu-24.04
     outputs:
       source_count: ${{ steps.count.outputs.source_count }}
     steps:
       - id: count
-        name: Count source PDFs from GitHub tree
+        name: Count source PDFs
         shell: bash
         run: |
-          TREE=$(curl -fsSL "https://api.github.com/repos/$GITHUB_REPOSITORY/git/trees/$GITHUB_REF_NAME?recursive=1")
-          TRUNCATED=$(jq -r '.truncated // false' <<<"$TREE")
-          [ "$TRUNCATED" = "false" ] || { echo "Tree listing truncated" >&2; exit 1; }
-          COUNT=$(jq '[.tree[] | select(.type == "blob") | select(.path | ascii_downcase | endswith(".pdf"))] | length' <<<"$TREE")
+          COUNT=$(python - <<'PY'
+          import json, urllib.request, os
+          repo=os.environ['GITHUB_REPOSITORY']; ref=os.environ['SOURCE_REF']
+          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/git/trees/{ref}?recursive=1',headers={'Accept':'application/vnd.github+json','User-Agent':'Videha-PDF-UA-Remediator/1.0'})
+          with urllib.request.urlopen(req, timeout=120) as r: data=json.load(r)
+          if data.get('truncated'): raise SystemExit('GitHub tree response truncated')
+          print(sum(1 for e in data.get('tree',[]) if e.get('type')=='blob' and str(e.get('path','')).lower().endswith('.pdf')))
+          PY
+          )
           echo "source_count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "Source PDFs: $COUNT"
       - name: Create or retain accessible-PDF release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view "$ACCESSIBLE_PDF_RELEASE" >/dev/null 2>&1; then
-            gh release edit "$ACCESSIBLE_PDF_RELEASE" \
+          if gh release view "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release edit "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" \
               --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" \
               --notes "Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded."
           else
-            gh release create "$ACCESSIBLE_PDF_RELEASE" \
+            gh release create "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
               --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" \
               --notes "Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded."
           fi
 
   remediate:
-    if: github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.ref_name == 'main'
     needs: prepare-release
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -115,9 +115,10 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
     steps:
       - name: Fetch remediation script only
+        shell: bash
         run: |
           mkdir -p scripts
-          curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF_NAME/scripts/remediate_pdfs.py" -o scripts/remediate_pdfs.py
+          curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$SOURCE_REF/scripts/remediate_pdfs.py" -o scripts/remediate_pdfs.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -134,7 +135,7 @@ jobs:
         continue-on-error: true
         run: |
           python scripts/remediate_pdfs.py \
-            --source-ref "$GITHUB_REF_NAME" \
+            --source-ref "$SOURCE_REF" \
             --shard-index '${{ matrix.shard }}' \
             --shard-count 24 \
             --out remediated \
@@ -144,12 +145,13 @@ jobs:
         if: always() && hashFiles('remediated/manifest.json') != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           jq -r '.records[] | select(.status == "pdfua-validated") | .accessiblePdfAsset' remediated/manifest.json |
           while IFS= read -r asset; do
             [ -n "$asset" ] || continue
-            gh release upload "$ACCESSIBLE_PDF_RELEASE" "remediated/$asset" --clobber
+            gh release upload "$ACCESSIBLE_PDF_RELEASE" "remediated/$asset" --clobber --repo "$GH_REPO"
           done
       - name: Upload shard manifest
         if: always()
@@ -164,14 +166,15 @@ jobs:
         run: exit 1
 
   finalize:
-    if: always() && github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: always() && github.ref_name == 'main'
     needs: [prepare-release, remediate]
     runs-on: ubuntu-24.04
     steps:
       - name: Fetch manifest merger only
+        shell: bash
         run: |
           mkdir -p scripts
-          curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_REF_NAME/scripts/merge_remediation_manifests.py" -o scripts/merge_remediation_manifests.py
+          curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$SOURCE_REF/scripts/merge_remediation_manifests.py" -o scripts/merge_remediation_manifests.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -192,17 +195,19 @@ jobs:
         if: always() && hashFiles('accessible-pdf-manifest.json') != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$ACCESSIBLE_PDF_RELEASE" accessible-pdf-manifest.json --clobber
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$ACCESSIBLE_PDF_RELEASE" accessible-pdf-manifest.json --clobber --repo "$GH_REPO"
       - name: Update release completion note
         if: always() && hashFiles('accessible-pdf-manifest.json') != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           EXPECTED=$(jq -r '.expectedSourcePdfCount' accessible-pdf-manifest.json)
           DONE=$(jq -r '.summary["pdfua-validated"] // 0' accessible-pdf-manifest.json)
           COMPLETE=$(jq -r '.complete' accessible-pdf-manifest.json)
-          gh release edit "$ACCESSIBLE_PDF_RELEASE" \
+          gh release edit "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" \
             --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" \
             --notes "PDF/UA remediation run: $DONE of $EXPECTED source PDFs passed pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation. Complete: $COMPLETE. Historical originals are unchanged. OCR-derived text is explicitly marked as not editorially proofread; the manifest records OCR pages and any unrecovered pages for targeted human review."
       - name: Enforce whole-archive completion
