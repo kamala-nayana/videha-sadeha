@@ -8,7 +8,7 @@ on:
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   push:
-    branches: [main]
+    branches: [main, pdf-accessibility-remediation-2026-09-13]
     paths:
       - "**.pdf"
       - scripts/remediate_pdfs.py
@@ -25,7 +25,7 @@ env:
 
 jobs:
   smoke:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name != 'main')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -64,7 +64,7 @@ jobs:
           retention-days: 7
 
   prepare-release:
-    if: github.event_name != 'pull_request'
+    if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
       source_count: ${{ steps.count.outputs.source_count }}
@@ -96,7 +96,7 @@ jobs:
           fi
 
   remediate:
-    if: github.event_name != 'pull_request'
+    if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch'
     needs: prepare-release
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -155,7 +155,7 @@ jobs:
         run: exit 1
 
   finalize:
-    if: always() && github.event_name != 'pull_request'
+    if: always() && ((github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch')
     needs: [prepare-release, remediate]
     runs-on: ubuntu-24.04
     steps:
