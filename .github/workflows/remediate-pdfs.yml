@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - scripts/remediate_pdfs.py
+      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - "**.pdf"
       - scripts/remediate_pdfs.py
+      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   workflow_dispatch:
@@ -22,6 +24,7 @@ permissions:
 env:
   ACCESSIBLE_PDF_RELEASE: accessible-pdf-v1
   VERAPDF_IMAGE: ghcr.io/verapdf/cli:latest
+  GH_REPO: ${{ github.repository }}
 
 jobs:
   smoke:
@@ -70,7 +73,7 @@ jobs:
           retention-days: 7
 
   prepare-release:
-    if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch'
+    if: github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     outputs:
       source_count: ${{ steps.count.outputs.source_count }}
@@ -101,7 +104,7 @@ jobs:
           fi
 
   remediate:
-    if: (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch'
+    if: github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: prepare-release
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -161,7 +164,7 @@ jobs:
         run: exit 1
 
   finalize:
-    if: always() && ((github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'workflow_dispatch')
+    if: always() && github.ref_name == 'main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: [prepare-release, remediate]
     runs-on: ubuntu-24.04
     steps:
