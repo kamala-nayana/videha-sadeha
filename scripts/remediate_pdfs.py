@@ -72,7 +72,13 @@ def harden_engine(source: str) -> str:
     new_css = '''.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-beng {{ font-family:"Noto Sans Bengali","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-guru {{ font-family:"Noto Sans Gurmukhi","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-gujr {{ font-family:"Noto Sans Gujarati","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-orya {{ font-family:"Noto Sans Oriya","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-taml {{ font-family:"Noto Sans Tamil","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-telu {{ font-family:"Noto Sans Telugu","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-knda {{ font-family:"Noto Sans Kannada","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-mlym {{ font-family:"Noto Sans Malayalam","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-sinh {{ font-family:"Noto Sans Sinhala","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}\n'''
     if old_css not in source:
         raise RuntimeError("Expected font-routing engine block not found; refusing an unverified runtime patch")
-    return source.replace(old_css, new_css, 1)
+    source = source.replace(old_css, new_css, 1)
+
+    old_base = 'html {{ font-family:"Noto Sans","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}'
+    fallback_stack = 'html {{ font-family:"Noto Sans","Noto Sans Devanagari","Noto Sans Bengali","Noto Sans Gurmukhi","Noto Sans Gujarati","Noto Sans Oriya","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Kannada","Noto Sans Malayalam","Noto Sans Sinhala","Noto Sans Arabic","Noto Sans Hebrew","Noto Sans Thai","Noto Sans Lao","Noto Sans Tibetan","Noto Sans Myanmar","Noto Sans Georgian","Noto Sans Armenian","Noto Sans Ethiopic","Noto Sans Khmer","Noto Sans Coptic","Noto Sans Symbols2","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}'
+    if old_base not in source:
+        raise RuntimeError("Expected base font stack not found; refusing an unverified runtime patch")
+    return source.replace(old_base, fallback_stack, 1)
 
 
 ref = option_value("--source-ref", os.environ.get("SOURCE_REF", "main"))
