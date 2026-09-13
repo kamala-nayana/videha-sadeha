@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - scripts/remediate_pdfs.py
+      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - "**.pdf"
       - scripts/remediate_pdfs.py
+      - scripts/remediate_pdfs_v2.py
       - scripts/merge_remediation_manifests.py
       - .github/workflows/remediate-pdfs.yml
   workflow_dispatch:
