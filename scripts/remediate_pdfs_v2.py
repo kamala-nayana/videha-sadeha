@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Generate and validate text-first PDF/UA-1 reading derivatives for Videha-Sadeha PDFs.
 
-The historical source files remain unchanged. Embedded text is retained where usable;
-weak/missing text pages are OCRed. Extraction artifacts that cannot represent meaningful
-Videha text (controls, private-use/unassigned characters, replacement/object markers and
-half-width Hangul garbage) are removed before PDF generation. Every published derivative
-must pass PDF tagging, qpdf integrity and veraPDF PDF/UA-1 machine validation.
+Historical source PDFs remain unchanged. Embedded text is retained where usable; weak or
+missing text pages are OCRed. Extracted text is normalized, obvious extraction garbage is
+removed, and Unicode script runs are rendered with appropriate Noto families so Greek,
+Coptic, Devanagari, Tirhuta and symbol text do not fall through to a .notdef glyph.
+Every published derivative must pass PDF tagging, qpdf integrity and veraPDF PDF/UA-1
+machine validation.
 """
 from __future__ import annotations
 
@@ -27,9 +28,9 @@ from pathlib import Path
 
 REPO = "videha-ejournal/videha-sadeha"
 RELEASE_TAG = os.environ.get("ACCESSIBLE_PDF_RELEASE", "accessible-pdf-v1")
-USER_AGENT = "Videha-PDF-UA-Remediator/2.0"
+USER_AGENT = "Videha-PDF-UA-Remediator/2.2"
 EMBEDDED_TEXT_MIN = 80
-PRESERVED_FORMAT_CHARS = {"\u200c", "\u200d"}  # ZWNJ / ZWJ can be meaningful in Indic shaping.
+PRESERVED_FORMAT_CHARS = {"\u200c", "\u200d"}
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
@@ -79,7 +80,7 @@ def safe_stem(source_path: str) -> str:
 
 
 def sanitize_text(value: str) -> tuple[str, list[str]]:
-    """Normalize text and remove extraction garbage that can create .notdef glyphs."""
+    """Normalize text and remove known PDF extraction garbage before HTML/PDF rendering."""
     value = value.replace("\x0c", "\n").replace("\r\n", "\n").replace("\r", "\n")
     value = unicodedata.normalize("NFC", value)
     removed: set[str] = set()
@@ -88,10 +89,10 @@ def sanitize_text(value: str) -> tuple[str, list[str]]:
         cp = ord(ch)
         category = unicodedata.category(ch)
         remove = (
-            ch == "\ufffd" or ch == "\ufffc" or
-            0xFFA0 <= cp <= 0xFFDC or  # Half-width Hangul is a recurrent PDF extraction artifact here.
-            category in {"Cc", "Cs", "Co", "Cn"} or
-            (category == "Cf" and ch not in PRESERVED_FORMAT_CHARS)
+            ch in {"\ufffd", "\ufffc"}
+            or 0xFFA0 <= cp <= 0xFFDC
+            or category in {"Cc", "Cs", "Co", "Cn"}
+            or (category == "Cf" and ch not in PRESERVED_FORMAT_CHARS)
         )
         if ch in {"\n", "\t"}:
             remove = False
@@ -153,6 +154,42 @@ def ocr_text(pdf: Path, page: int, work: Path, language: str) -> tuple[str, list
         image.unlink(missing_ok=True)
 
 
+def script_kind(ch: str) -> str:
+    cp = ord(ch)
+    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF:
+        return "deva"
+    if 0x11480 <= cp <= 0x114DF:
+        return "tirhuta"
+    if 0x03E2 <= cp <= 0x03EF or 0x2C80 <= cp <= 0x2CFF:
+        return "coptic"
+    if 0x0370 <= cp <= 0x03FF or 0x1F00 <= cp <= 0x1FFF:
+        return "greek"
+    if 0x2000 <= cp <= 0x2BFF or 0x1D400 <= cp <= 0x1D7FF:
+        return "symbol"
+    return "base"
+
+
+def script_aware_escape(value: str) -> str:
+    """Escape HTML while assigning non-Latin scripts to fonts that actually cover them."""
+    if not value:
+        return ""
+    pieces: list[str] = []
+    run_chars: list[str] = []
+    run_kind = script_kind(value[0])
+    for ch in value:
+        kind = script_kind(ch)
+        if kind != run_kind and run_chars:
+            escaped = html.escape("".join(run_chars))
+            pieces.append(escaped if run_kind == "base" else f'<span class="script-{run_kind}">{escaped}</span>')
+            run_chars = []
+            run_kind = kind
+        run_chars.append(ch)
+    if run_chars:
+        escaped = html.escape("".join(run_chars))
+        pieces.append(escaped if run_kind == "base" else f'<span class="script-{run_kind}">{escaped}</span>')
+    return "".join(pieces)
+
+
 def paragraphs(text: str) -> str:
     if not text:
         return '<p class="unrecovered">No machine-readable text was recovered from this source page. Consult the preserved visual facsimile.</p>'
@@ -160,7 +197,7 @@ def paragraphs(text: str) -> str:
     for block in (part.strip() for part in re.split(r"\n\s*\n", text)):
         if not block:
             continue
-        lines = [html.escape(line) for line in block.splitlines() if line.strip()]
+        lines = [script_aware_escape(line) for line in block.splitlines() if line.strip()]
         if lines:
             output.append("<p>" + "<br>".join(lines) + "</p>")
     return "\n".join(output)
@@ -192,7 +229,12 @@ def html_document(source_path: str, source_ref: str, source_hash: str, pages: li
 <meta name="dcterms.source" content="{html.escape(source_path)}"><meta name="dcterms.created" content="{generated}">
 <style>
 @page {{ size:A4; margin:18mm 17mm 20mm; @bottom-center {{ content:counter(page); font-size:9pt; }} }}
-html {{ font-family:"Noto Sans Devanagari","Noto Sans","Noto Sans Symbols2","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}
+html {{ font-family:"Noto Sans","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}
+.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}
+.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}
+.script-greek {{ font-family:"Noto Sans","DejaVu Sans",sans-serif; }}
+.script-coptic {{ font-family:"Noto Sans Coptic","Noto Sans","DejaVu Sans",sans-serif; }}
+.script-symbol {{ font-family:"Noto Sans Symbols2","Noto Sans","DejaVu Sans",sans-serif; }}
 body {{ margin:0; }} h1 {{ font-size:22pt; line-height:1.25; }} h2 {{ font-size:15pt; margin-top:0; }}
 a {{ color:#6e1322; text-decoration-thickness:.08em; }}
 .notice {{ border:1px solid #555; padding:10pt; margin:12pt 0; }}
@@ -218,6 +260,11 @@ def basic_validation(pdf: Path) -> tuple[bool, dict]:
     return tagged and integrity, {"pdfinfoTagged": tagged, "qpdfCheck": integrity}
 
 
+def _first_xml_start(raw: str) -> int:
+    starts = [pos for pos in (raw.find("<rawResults"), raw.find("<report")) if pos >= 0]
+    return min(starts) if starts else -1
+
+
 def verapdf_validation(pdf: Path, image: str) -> tuple[bool, dict]:
     mount = pdf.parent.resolve()
     result = run([
@@ -225,39 +272,52 @@ def verapdf_validation(pdf: Path, image: str) -> tuple[bool, dict]:
         "-f", "ua1", "--format", "raw", f"/data/{pdf.name}"
     ], check=False)
     raw = result.stdout or ""
-    start = raw.find("<report")
+    start = _first_xml_start(raw)
     if start < 0:
-        return False, {"veraPDF": False, "veraPDFError": (result.stderr or raw)[-2000:]}
+        return False, {"veraPDF": False, "veraPDFError": (result.stderr or raw)[-4000:]}
     try:
         root = ET.fromstring(raw[start:])
-        report = root.find(".//validationReport")
+        report = root.find(".//validationResult")
+        if report is None:
+            report = root.find(".//validationReport")
         compliant = report is not None and report.attrib.get("isCompliant") == "true"
         details = report.find("details") if report is not None else None
         failures: list[dict] = []
-        seen: set[tuple[str, str, str]] = set()
-        for assertion in root.findall('.//assertion[@status="FAILED"]'):
+        seen: set[tuple[str, str, str, str]] = set()
+        all_failed = root.findall('.//assertion[@status="FAILED"]')
+        pdf_pages: set[int] = set()
+        for assertion in all_failed:
             rule = assertion.find("ruleId")
             rule_text = ""
             if rule is not None:
                 rule_text = f"{rule.attrib.get('specification','')} {rule.attrib.get('clause','')} test {rule.attrib.get('testNumber','')}".strip()
             message = (assertion.findtext("message") or "").strip()
             error = (assertion.findtext("errorMessage") or "").strip()
-            key = (rule_text, message, error)
+            context = (assertion.findtext("./location/context") or "").strip()
+            match = re.search(r"pages\[(\d+)\]", context)
+            if match:
+                pdf_pages.add(int(match.group(1)) + 1)
+            key = (rule_text, message, error, context)
             if key in seen:
                 continue
             seen.add(key)
-            failures.append({"rule": rule_text, "message": message, "error": error})
-            if len(failures) >= 25:
-                break
+            if len(failures) < 25:
+                failures.append({"rule": rule_text, "message": message, "error": error, "context": context})
+        profile = "PDF/UA-1"
+        if report is not None:
+            profile = report.attrib.get("profileName") or report.attrib.get("flavour") or profile
+        failed_rules = int(details.attrib.get("failedRules", "0")) if details is not None else len({f["rule"] for f in failures if f["rule"]})
+        failed_checks = int(details.attrib.get("failedChecks", "0")) if details is not None else len(all_failed)
         return compliant, {
             "veraPDF": compliant,
-            "profile": report.attrib.get("profileName") if report is not None else "PDF/UA-1",
-            "failedRules": int(details.attrib.get("failedRules", "0")) if details is not None else None,
-            "failedChecks": int(details.attrib.get("failedChecks", "0")) if details is not None else None,
+            "profile": profile,
+            "failedRules": failed_rules,
+            "failedChecks": failed_checks,
             "failedAssertions": failures,
+            "failedPdfPages": sorted(pdf_pages),
         }
     except Exception as exc:
-        return False, {"veraPDF": False, "veraPDFError": str(exc), "veraPDFOutputTail": raw[-2000:]}
+        return False, {"veraPDF": False, "veraPDFError": str(exc), "veraPDFOutputTail": raw[-4000:]}
 
 
 def remediate(entry: dict, source_ref: str, output: Path, verapdf_image: str | None) -> dict:
@@ -276,7 +336,7 @@ def remediate(entry: dict, source_ref: str, output: Path, verapdf_image: str | N
         "releaseTag": RELEASE_TAG,
         "generated": generated,
         "status": "processing",
-        "textSanitization": "NFC normalization; control/private-use/unassigned/replacement/object-marker and half-width-Hangul extraction artifacts removed; ZWNJ/ZWJ preserved",
+        "textSanitization": "NFC normalization; control/private-use/unassigned/replacement/object-marker and half-width-Hangul extraction artifacts removed; ZWNJ/ZWJ preserved; Unicode script runs use script-appropriate Noto fonts",
     }
     try:
         download_source(source_ref, source_path, source_pdf)
@@ -368,7 +428,7 @@ def main() -> int:
                 print(f"     {failure.get('rule')}: {failure.get('error') or failure.get('message')}", flush=True)
 
     manifest = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "repository": REPO,
         "sourceRef": args.source_ref,
         "releaseTag": RELEASE_TAG,
