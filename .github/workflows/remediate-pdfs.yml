@@ -71,7 +71,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             poppler-utils qpdf tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin \
-            tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra
+            tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra \
+            fonts-noto-cjk fonts-noto-color-emoji
           python -m pip install --disable-pip-version-check 'weasyprint==70.0'
           docker pull "$VERAPDF_IMAGE"
       - name: Remediate and validate one real archive PDF
@@ -162,7 +163,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             poppler-utils qpdf tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin \
-            tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra
+            tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra \
+            fonts-noto-cjk fonts-noto-color-emoji
           python -m pip install --disable-pip-version-check 'weasyprint==70.0'
           docker pull "$VERAPDF_IMAGE"
       - id: remediation
