@@ -20,13 +20,39 @@ on:
 
 permissions:
   contents: write
+  actions: write
+
+concurrency:
+  group: pdfua-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   ACCESSIBLE_PDF_RELEASE: accessible-pdf-v1
   VERAPDF_IMAGE: ghcr.io/verapdf/cli:latest
   SOURCE_REF: ${{ github.ref_name }}
+  SHARD_COUNT: '96'
 
 jobs:
+  cancel-obsolete:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cancel older main PDF remediation runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          for status in in_progress queued; do
+            gh run list --repo "$GH_REPO" --workflow remediate-pdfs.yml --branch main --status "$status" --limit 100 --json databaseId --jq '.[].databaseId' |
+            while IFS= read -r run_id; do
+              [ -n "$run_id" ] || continue
+              [ "$run_id" = "$GITHUB_RUN_ID" ] && continue
+              echo "Cancelling obsolete PDF remediation run $run_id"
+              gh run cancel "$run_id" --repo "$GH_REPO" || true
+            done
+          done
+
   smoke:
     if: github.ref_name != 'main'
     runs-on: ubuntu-24.04
@@ -70,12 +96,14 @@ jobs:
 
   prepare-release:
     if: github.ref_name == 'main'
+    needs: cancel-obsolete
     runs-on: ubuntu-24.04
     outputs:
       source_count: ${{ steps.count.outputs.source_count }}
+      matrix: ${{ steps.count.outputs.matrix }}
     steps:
       - id: count
-        name: Count source PDFs
+        name: Count source PDFs and construct shard matrix
         shell: bash
         run: |
           COUNT=$(python - <<'PY'
@@ -87,22 +115,27 @@ jobs:
           print(sum(1 for e in data.get('tree',[]) if e.get('type')=='blob' and str(e.get('path','')).lower().endswith('.pdf')))
           PY
           )
+          MATRIX=$(python - <<'PY'
+          import json, os
+          print(json.dumps(list(range(int(os.environ['SHARD_COUNT']))), separators=(',',':')))
+          PY
+          )
           echo "source_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "Source PDFs: $COUNT"
+          test "$COUNT" = '486'
       - name: Create or retain accessible-PDF release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          NOTES='Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded.'
           if gh release view "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" >/dev/null 2>&1; then
             gh release edit "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" \
-              --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" \
-              --notes "Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded."
+              --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" --notes "$NOTES"
           else
-            gh release create "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" \
-              --target "$GITHUB_SHA" \
-              --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" \
-              --notes "Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded."
+            gh release create "$ACCESSIBLE_PDF_RELEASE" --repo "$GH_REPO" --target "$GITHUB_SHA" \
+              --title "Videha-Sadeha Accessible PDF/UA Reading Derivatives" --notes "$NOTES"
           fi
 
   remediate:
@@ -112,9 +145,9 @@ jobs:
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      max-parallel: 8
+      max-parallel: 20
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+        shard: ${{ fromJSON(needs.prepare-release.outputs.matrix) }}
     steps:
       - name: Fetch remediation script only
         shell: bash
@@ -139,7 +172,7 @@ jobs:
           python scripts/remediate_pdfs.py \
             --source-ref "$SOURCE_REF" \
             --shard-index '${{ matrix.shard }}' \
-            --shard-count 24 \
+            --shard-count "$SHARD_COUNT" \
             --out remediated \
             --verapdf-image "$VERAPDF_IMAGE" \
             --require-pdfua
