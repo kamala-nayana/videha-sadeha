@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Compatibility launcher and veraPDF raw-report normalizer for the hardened remediation engine.
 
-The launcher also applies two narrow runtime hardenings to the v2 engine before execution:
-transient GitHub/raw fetch retry/backoff, and explicit Noto routing for major Indic scripts.
-The PDF/UA acceptance checks themselves are unchanged.
+The launcher applies deterministic runtime hardenings to the v2 engine before execution:
+transient GitHub/raw fetch retry/backoff, explicit routing for major Indic scripts, and
+forced fallback routing for Unicode ranges that are not covered by the base Noto Sans
+font. The PDF/UA acceptance checks themselves are unchanged.
 """
 from __future__ import annotations
 import json
@@ -33,7 +34,7 @@ def option_value(name: str, default: str) -> str:
 def fetch_engine(url: str, attempts: int = 4) -> str:
     last: Exception | None = None
     for attempt in range(1, attempts + 1):
-        request = urllib.request.Request(url, headers={"User-Agent": "Videha-PDF-UA-Remediator-Launcher/2.2"})
+        request = urllib.request.Request(url, headers={"User-Agent": "Videha-PDF-UA-Remediator-Launcher/2.4"})
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
                 return response.read().decode("utf-8")
@@ -63,10 +64,16 @@ def harden_engine(source: str) -> str:
     source = source.replace(old_download, new_download, 1)
 
     old_scripts = '''    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF:\n        return "deva"\n    if 0x11480 <= cp <= 0x114DF:\n        return "tirhuta"\n'''
-    new_scripts = '''    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF:\n        return "deva"\n    if 0x0980 <= cp <= 0x09FF:\n        return "beng"\n    if 0x0A00 <= cp <= 0x0A7F:\n        return "guru"\n    if 0x0A80 <= cp <= 0x0AFF:\n        return "gujr"\n    if 0x0B00 <= cp <= 0x0B7F:\n        return "orya"\n    if 0x0B80 <= cp <= 0x0BFF:\n        return "taml"\n    if 0x0C00 <= cp <= 0x0C7F:\n        return "telu"\n    if 0x0C80 <= cp <= 0x0CFF:\n        return "knda"\n    if 0x0D00 <= cp <= 0x0D7F:\n        return "mlym"\n    if 0x0D80 <= cp <= 0x0DFF:\n        return "sinh"\n    if 0x11480 <= cp <= 0x114DF:\n        return "tirhuta"\n'''
+    new_scripts = '''    if 0x0900 <= cp <= 0x097F or 0xA8E0 <= cp <= 0xA8FF or 0x1CD0 <= cp <= 0x1CFF or 0x11B00 <= cp <= 0x11B5F:\n        return "deva"\n    if 0x0980 <= cp <= 0x09FF:\n        return "beng"\n    if 0x0A00 <= cp <= 0x0A7F:\n        return "guru"\n    if 0x0A80 <= cp <= 0x0AFF:\n        return "gujr"\n    if 0x0B00 <= cp <= 0x0B7F:\n        return "orya"\n    if 0x0B80 <= cp <= 0x0BFF:\n        return "taml"\n    if 0x0C00 <= cp <= 0x0C7F:\n        return "telu"\n    if 0x0C80 <= cp <= 0x0CFF:\n        return "knda"\n    if 0x0D00 <= cp <= 0x0D7F:\n        return "mlym"\n    if 0x0D80 <= cp <= 0x0DFF:\n        return "sinh"\n    if 0x11480 <= cp <= 0x114DF:\n        return "tirhuta"\n'''
     if old_scripts not in source:
         raise RuntimeError("Expected script-routing engine block not found; refusing an unverified runtime patch")
     source = source.replace(old_scripts, new_scripts, 1)
+
+    old_symbol_tail = '''    if 0x2000 <= cp <= 0x2BFF or 0x1D400 <= cp <= 0x1D7FF:\n        return "symbol"\n    return "base"\n'''
+    new_symbol_tail = '''    if (\n        0x2000 <= cp <= 0x2BFF\n        or 0x1D000 <= cp <= 0x1D2FF\n        or 0x1D400 <= cp <= 0x1D7FF\n        or 0x1F000 <= cp <= 0x1FAFF\n    ):\n        return "symbol"\n    # Noto Sans intentionally does not cover many complex scripts, CJK/Hangul,\n    # and historic/supplementary scripts. Isolate those characters into their\n    # own span so Pango cannot retain a missing glyph inside a base-font cluster.\n    if cp >= 0x0530:\n        return "fallback"\n    return "base"\n'''
+    if old_symbol_tail not in source:
+        raise RuntimeError("Expected symbol-routing engine block not found; refusing an unverified runtime patch")
+    source = source.replace(old_symbol_tail, new_symbol_tail, 1)
 
     old_css = '''.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}\n'''
     new_css = '''.script-deva {{ font-family:"Noto Sans Devanagari","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-beng {{ font-family:"Noto Sans Bengali","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-guru {{ font-family:"Noto Sans Gurmukhi","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-gujr {{ font-family:"Noto Sans Gujarati","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-orya {{ font-family:"Noto Sans Oriya","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-taml {{ font-family:"Noto Sans Tamil","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-telu {{ font-family:"Noto Sans Telugu","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-knda {{ font-family:"Noto Sans Kannada","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-mlym {{ font-family:"Noto Sans Malayalam","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-sinh {{ font-family:"Noto Sans Sinhala","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-tirhuta {{ font-family:"Noto Sans Tirhuta","Noto Sans","DejaVu Sans",sans-serif; }}\n'''
@@ -74,8 +81,14 @@ def harden_engine(source: str) -> str:
         raise RuntimeError("Expected font-routing engine block not found; refusing an unverified runtime patch")
     source = source.replace(old_css, new_css, 1)
 
+    old_symbol_css = '.script-symbol {{ font-family:"Noto Sans Symbols2","Noto Sans","DejaVu Sans",sans-serif; }}'
+    new_symbol_css = '''.script-symbol {{ font-family:"Noto Sans Symbols2","Noto Color Emoji","Noto Sans CJK JP","Noto Sans","DejaVu Sans",sans-serif; }}\n.script-fallback {{ font-family:"Noto Sans Devanagari","Noto Sans Bengali","Noto Sans Gurmukhi","Noto Sans Gujarati","Noto Sans Oriya","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Kannada","Noto Sans Malayalam","Noto Sans Sinhala","Noto Sans Arabic","Noto Sans Hebrew","Noto Sans Thai","Noto Sans Lao","Noto Sans Tibetan","Noto Sans Myanmar","Noto Sans Georgian","Noto Sans Armenian","Noto Sans Ethiopic","Noto Sans Khmer","Noto Sans Coptic","Noto Sans Syriac","Noto Sans Thaana","Noto Sans NKo","Noto Sans Cherokee","Noto Sans Canadian Aboriginal","Noto Sans Yi","Noto Sans Vai","Noto Sans Tifinagh","Noto Sans Symbols2","Noto Sans CJK JP","Noto Sans CJK SC","Noto Sans CJK KR","Noto Color Emoji","DejaVu Sans",sans-serif; }}'''
+    if old_symbol_css not in source:
+        raise RuntimeError("Expected symbol font block not found; refusing an unverified runtime patch")
+    source = source.replace(old_symbol_css, new_symbol_css, 1)
+
     old_base = 'html {{ font-family:"Noto Sans","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}'
-    fallback_stack = 'html {{ font-family:"Noto Sans","Noto Sans Devanagari","Noto Sans Bengali","Noto Sans Gurmukhi","Noto Sans Gujarati","Noto Sans Oriya","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Kannada","Noto Sans Malayalam","Noto Sans Sinhala","Noto Sans Arabic","Noto Sans Hebrew","Noto Sans Thai","Noto Sans Lao","Noto Sans Tibetan","Noto Sans Myanmar","Noto Sans Georgian","Noto Sans Armenian","Noto Sans Ethiopic","Noto Sans Khmer","Noto Sans Coptic","Noto Sans Symbols2","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}'
+    fallback_stack = 'html {{ font-family:"Noto Sans","Noto Sans Devanagari","Noto Sans Bengali","Noto Sans Gurmukhi","Noto Sans Gujarati","Noto Sans Oriya","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Kannada","Noto Sans Malayalam","Noto Sans Sinhala","Noto Sans Arabic","Noto Sans Hebrew","Noto Sans Thai","Noto Sans Lao","Noto Sans Tibetan","Noto Sans Myanmar","Noto Sans Georgian","Noto Sans Armenian","Noto Sans Ethiopic","Noto Sans Khmer","Noto Sans Coptic","Noto Sans Symbols2","Noto Sans CJK JP","Noto Sans CJK SC","Noto Sans CJK KR","Noto Color Emoji","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.55; }}'
     if old_base not in source:
         raise RuntimeError("Expected base font stack not found; refusing an unverified runtime patch")
     return source.replace(old_base, fallback_stack, 1)
