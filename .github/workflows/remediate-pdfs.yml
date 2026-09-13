@@ -33,6 +33,10 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 1
+          sparse-checkout: |
+            scripts
+            .github
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -73,6 +77,10 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 1
+          sparse-checkout: |
+            scripts
+            .github
+          sparse-checkout-cone-mode: true
       - id: count
         name: Count source PDFs
         shell: bash
@@ -110,6 +118,10 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 1
+          sparse-checkout: |
+            scripts
+            .github
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -163,6 +175,10 @@ jobs:
         with:
           filter: blob:none
           fetch-depth: 1
+          sparse-checkout: |
+            scripts
+            .github
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
