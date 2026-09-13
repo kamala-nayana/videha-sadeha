@@ -28,7 +28,7 @@ from pathlib import Path
 
 REPO = "videha-ejournal/videha-sadeha"
 RELEASE_TAG = os.environ.get("ACCESSIBLE_PDF_RELEASE", "accessible-pdf-v1")
-USER_AGENT = "Videha-PDF-UA-Remediator/2.2"
+USER_AGENT = "Videha-PDF-UA-Remediator/2.3"
 EMBEDDED_TEXT_MIN = 80
 PRESERVED_FORMAT_CHARS = {"\u200c", "\u200d"}
 
@@ -265,6 +265,30 @@ def _first_xml_start(raw: str) -> int:
     return min(starts) if starts else -1
 
 
+def _local_name(tag: str) -> str:
+    return str(tag).rsplit("}", 1)[-1]
+
+
+def _first_local(root: ET.Element, *names: str) -> ET.Element | None:
+    wanted = set(names)
+    return next((node for node in root.iter() if _local_name(node.tag) in wanted), None)
+
+
+def _child_local(parent: ET.Element | None, name: str) -> ET.Element | None:
+    if parent is None:
+        return None
+    return next((node for node in list(parent) if _local_name(node.tag) == name), None)
+
+
+def _descendant_text(parent: ET.Element | None, *path: str) -> str:
+    node = parent
+    for name in path:
+        node = _child_local(node, name)
+        if node is None:
+            return ""
+    return (node.text or "").strip()
+
+
 def verapdf_validation(pdf: Path, image: str) -> tuple[bool, dict]:
     mount = pdf.parent.resolve()
     result = run([
@@ -277,23 +301,24 @@ def verapdf_validation(pdf: Path, image: str) -> tuple[bool, dict]:
         return False, {"veraPDF": False, "veraPDFError": (result.stderr or raw)[-4000:]}
     try:
         root = ET.fromstring(raw[start:])
-        report = root.find(".//validationResult")
-        if report is None:
-            report = root.find(".//validationReport")
-        compliant = report is not None and report.attrib.get("isCompliant") == "true"
-        details = report.find("details") if report is not None else None
+        report = _first_local(root, "validationResult", "validationReport")
+        compliant = report is not None and str(report.attrib.get("isCompliant", "")).lower() == "true"
+        details = _first_local(report, "details") if report is not None else None
         failures: list[dict] = []
         seen: set[tuple[str, str, str, str]] = set()
-        all_failed = root.findall('.//assertion[@status="FAILED"]')
+        all_failed = [
+            node for node in root.iter()
+            if _local_name(node.tag) == "assertion" and str(node.attrib.get("status", "")).upper() == "FAILED"
+        ]
         pdf_pages: set[int] = set()
         for assertion in all_failed:
-            rule = assertion.find("ruleId")
+            rule = _child_local(assertion, "ruleId")
             rule_text = ""
             if rule is not None:
                 rule_text = f"{rule.attrib.get('specification','')} {rule.attrib.get('clause','')} test {rule.attrib.get('testNumber','')}".strip()
-            message = (assertion.findtext("message") or "").strip()
-            error = (assertion.findtext("errorMessage") or "").strip()
-            context = (assertion.findtext("./location/context") or "").strip()
+            message = _descendant_text(assertion, "message")
+            error = _descendant_text(assertion, "errorMessage")
+            context = _descendant_text(assertion, "location", "context")
             match = re.search(r"pages\[(\d+)\]", context)
             if match:
                 pdf_pages.add(int(match.group(1)) + 1)
