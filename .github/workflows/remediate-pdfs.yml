@@ -31,6 +31,7 @@ env:
   VERAPDF_IMAGE: ghcr.io/verapdf/cli:latest
   SOURCE_REF: ${{ github.ref_name }}
   SHARD_COUNT: '96'
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   cancel-obsolete:
@@ -39,7 +40,6 @@ jobs:
     steps:
       - name: Cancel older main PDF remediation runs
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
@@ -73,7 +73,7 @@ jobs:
             poppler-utils qpdf tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin \
             tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra \
             fonts-noto-cjk fonts-noto-color-emoji
-          python -m pip install --disable-pip-version-check 'weasyprint==70.0'
+          python -m pip install --disable-pip-version-check 'weasyprint==70.0' 'pikepdf==9.11.0'
           docker pull "$VERAPDF_IMAGE"
       - name: Remediate and validate one real archive PDF
         run: |
@@ -108,10 +108,23 @@ jobs:
         shell: bash
         run: |
           COUNT=$(python - <<'PY'
-          import json, urllib.request, os
+          import json, urllib.request, os, time, urllib.error
           repo=os.environ['GITHUB_REPOSITORY']; ref=os.environ['SOURCE_REF']
-          req=urllib.request.Request(f'https://api.github.com/repos/{repo}/git/trees/{ref}?recursive=1',headers={'Accept':'application/vnd.github+json','User-Agent':'Videha-PDF-UA-Remediator/1.0'})
-          with urllib.request.urlopen(req, timeout=120) as r: data=json.load(r)
+          headers={'Accept':'application/vnd.github+json','User-Agent':'Videha-PDF-UA-Remediator/1.0'}
+          token=os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN')
+          if token: headers['Authorization']=f'Bearer {token}'
+          url=f'https://api.github.com/repos/{repo}/git/trees/{ref}?recursive=1'
+          last=None
+          for attempt in range(1,5):
+              try:
+                  req=urllib.request.Request(url,headers=headers)
+                  with urllib.request.urlopen(req, timeout=120) as r: data=json.load(r)
+                  break
+              except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+                  last=exc
+                  if isinstance(exc, urllib.error.HTTPError) and exc.code not in {403,429,500,502,503,504}: raise
+                  if attempt == 4: raise
+                  time.sleep(min(15, 2 ** attempt))
           if data.get('truncated'): raise SystemExit('GitHub tree response truncated')
           print(sum(1 for e in data.get('tree',[]) if e.get('type')=='blob' and str(e.get('path','')).lower().endswith('.pdf')))
           PY
@@ -127,7 +140,6 @@ jobs:
           test "$COUNT" = '486'
       - name: Create or retain accessible-PDF release
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           NOTES='Machine-readable PDF/UA-1 reading derivatives of the preserved Videha-Sadeha archive. Historical originals remain unchanged. Embedded text is retained where usable; weak or missing text pages use Devanagari/English OCR. OCR is not represented as editorially proofread text. Only derivatives that pass pdfinfo, qpdf and veraPDF PDF/UA-1 machine validation are uploaded.'
@@ -165,7 +177,7 @@ jobs:
             poppler-utils qpdf tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin \
             tesseract-ocr-script-deva fonts-noto-core fonts-noto-extra \
             fonts-noto-cjk fonts-noto-color-emoji
-          python -m pip install --disable-pip-version-check 'weasyprint==70.0'
+          python -m pip install --disable-pip-version-check 'weasyprint==70.0' 'pikepdf==9.11.0'
           docker pull "$VERAPDF_IMAGE"
       - id: remediation
         name: Build and validate shard ${{ matrix.shard }}
@@ -181,7 +193,6 @@ jobs:
       - name: Publish only veraPDF-compliant derivatives
         if: always() && hashFiles('remediated/manifest.json') != ''
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
@@ -231,13 +242,11 @@ jobs:
       - name: Publish manifest even when review is still required
         if: always() && hashFiles('accessible-pdf-manifest.json') != ''
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: gh release upload "$ACCESSIBLE_PDF_RELEASE" accessible-pdf-manifest.json --clobber --repo "$GH_REPO"
       - name: Update release completion note
         if: always() && hashFiles('accessible-pdf-manifest.json') != ''
         env:
-          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
