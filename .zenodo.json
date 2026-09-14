@@ -1,0 +1,15 @@
+{
+  "title": "videha-sadeha",
+  "upload_type": "dataset",
+  "description": "Archived digital-humanities research release of the Videha Sadeha repository, part of Videha — First Maithili Fortnightly eJournal, ISSN 2229-547X.",
+  "creators": [
+    {
+      "name": "Thakur, Gajendra",
+      "affiliation": "Videha — First Maithili Fortnightly eJournal"
+    }
+  ],
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "keywords": ["Videha", "Maithili", "Videha Sadeha", "digital humanities", "research archive"],
+  "notes": "Parent publication: Videha — First Maithili Fortnightly eJournal · ISSN 2229-547X · https://www.videha.co.in/ · GitHub mirror https://videha-ejournal.github.io/videha/. CC BY 4.0 applies to repository-original and curatorial metadata/dataset content; item-level rights notices prevail where applicable."
+}
